@@ -1,0 +1,8 @@
+@font-face {
+    font-family: 'Butler';
+    src: url('./fonts/Butler-Medium.woff2') format('woff2'),
+         url('./fonts/Butler-UltraLight.woff') format('woff'),
+         url('./fonts/Butler.woff2') format('woff2'); /* Adjust the file names as necessary */
+    font-weight: normal;
+    font-style: normal;
+}
