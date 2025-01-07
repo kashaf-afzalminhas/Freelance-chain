@@ -1,17 +1,17 @@
 import React from 'react'
-import Header from './Header'
-import About from './About'
-import Navbar from './Navbar'
-import EndlessPossibilities from './EndlessPos'
-import UserFeedback from './UserFeedback'
+// import About from './About'
+// import EndlessPossibilities from './EndlessPos'
+// import UserFeedback from './UserFeedback'
+import Hero from './Hero'
+import Services from './Services'
+import ConsultingSection from './Consulting'
 function Homepage() {
   return (
     <div className="font-sans bg-white">
-        <Navbar/>
-      <Header />
-      <About />
-      <EndlessPossibilities/>
-      <UserFeedback/>
+    
+      <Hero/>
+      <Services/>
+      <ConsultingSection/>
     </div>
   )
 }
