@@ -2,11 +2,12 @@
 import './index.css'
 import './App.css'
 import React from 'react'
+import Homepage from './components/Homepage'
 function App() {
   
   return (
     <>
-     <h1 className='text-[#1976D2]'>home</h1>
+       <Homepage/>
      
     </>
   )
