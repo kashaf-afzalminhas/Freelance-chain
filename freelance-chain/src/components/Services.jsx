@@ -30,11 +30,17 @@ const services = [
 
 const Services = () => {
   return (
-    <div className="flex p-8 bg-[#fdf8ec]">
+    <div className="flex p-8 bg-[#fdf8ec] justify-center items-center">
       {/* Left Side: Heading and Button */}
       <div className="w-1/3 pr-6">
-        <h2 className="text-2xl font-bold mb-6">Amazing services</h2>
-        <button className='bg-green-900 text-white rounded-sm p-2'>
+        <h2 className="text-2xl font-bold mb-6 flex justify-center items-center ">Amazing services</h2>
+         <p className="mb-6 text-lg">
+                  Find Your Next Freelance Job. As a leading freelance job portal in India,
+                  we connect talented individuals with businesses seeking top-notch freelancers.
+                  Join us and discover a world of possibilities.
+                </p>
+        
+        <button className='bg-green-900 flex justify-center mx-auto text-white rounded-sm p-2'>
           View Jobs
         </button>
       </div>
@@ -44,7 +50,7 @@ const Services = () => {
         {services.map((service, index) => (
           <div
             key={index}
-            className={`p-6 rounded-lg shadow-md ${service.isFeatured ? 'bg-[#0c3b2e]  text-white' : 'bg-white'}`}
+            className={`p-6 rounded-lg shadow-md hover:bg-[#0c3b2e]  hover:text-white  ${service.isFeatured ? 'bg-[#0c3b2e]  text-white' : 'bg-white'}`}
           >
             <h3 className="text-xl font-semibold mb-2">{service.title}</h3>
             <p className="mb-4">{service.description}</p>

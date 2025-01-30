@@ -1,5 +1,6 @@
 import React from "react";
 import marketingImage from "../assets/Images/fr.jpg"; // Replace with your actual image path
+import { NavLink } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -7,7 +8,7 @@ const Hero = () => {
       <div className="flex flex-col md:flex-row bg-[#0c3b2e] h-2/4 w-9/12 ml-52 mb-20 mt-20 rounded-2xl shadow-lg">
         <div className="md:w-1/2 text-white">
           <h1 className="text-4xl p-8 font-bold mb-4">
-            Boost your Skills through{" "} <br />
+            Boost your Skills through{" "}
             <span className="text-green-400">Freelance Chain</span>
           </h1>
           <p className="text-lg mb-6 pl-8">
@@ -22,10 +23,14 @@ const Hero = () => {
             flourish.
           </p>
           <div className="flex space-x-4">
-            <button className="bg-white text-[#0c3b2e] justify-center mx-auto py-2 px-4 rounded hover:bg-gray-200">
-                         Get Started
-            </button>
-           
+
+            <NavLink
+              to="/Signin"
+               className="bg-white text-[#0c3b2e] justify-center mx-auto py-2 px-4 rounded hover:bg-gray-200"
+             
+            >
+              Get Started
+            </NavLink>
           </div>
         </div>
         <div className="md:w-1/2 flex justify-end md:mt-0">
