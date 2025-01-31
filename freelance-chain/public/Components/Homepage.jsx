@@ -1,5 +1,5 @@
 import React from 'react'
-import Header from '../../src/components/Header'
+// import Header from '../../src/components/Header'
 import About from './About'
 import Navbar from '../../src/components/Navbar'
 import EndlessPossibilities from './EndlessPos'
