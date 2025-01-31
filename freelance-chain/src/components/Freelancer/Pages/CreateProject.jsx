@@ -1,6 +1,13 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const CreateServices = () => {
+  const navigate = useNavigate();
+
+  const handleNavigation = () => {
+    navigate("/projectOverview");
+  };
+
   return (
     <section className="container mx-auto px-6 py-16">
       {/* Top Section */}
@@ -16,7 +23,10 @@ const CreateServices = () => {
             ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
             aliquip ex ea commodo consequat.
           </p>
-          <button className="mt-6 bg-highlight text-white px-6 py-2 rounded-lg font-semibold hover:bg-accent transition">
+          <button
+            onClick={handleNavigation}
+            className="mt-6 bg-highlight text-white px-6 py-2 rounded-lg font-semibold hover:bg-accent transition"
+          >
             Create Project
           </button>
         </div>

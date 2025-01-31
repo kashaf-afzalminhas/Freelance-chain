@@ -66,7 +66,7 @@ const Header = () => {
             </button>
             {projectsDropdownOpen && (
               <div className="absolute bg-white w-40 shadow-lg border rounded-md mt-2 z-10">
-                <NavLink to="/my-projects" className="block px-4 py-2 hover:bg-[#f0f0f0]">
+                <NavLink to="/Createproject" className="block px-4 py-2 hover:bg-[#f0f0f0]">
                   My Projects
                 </NavLink>
                 <NavLink to="/contracts-history" className="block px-4 py-2 hover:bg-[#f0f0f0]">
