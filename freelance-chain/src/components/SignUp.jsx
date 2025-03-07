@@ -1,71 +1,67 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+const SignUp = ({ setUser }) => {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [walletAddress, setWalletAddress] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const navigate = useNavigate();
 
-const SignUp = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  useEffect(() => {
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        setWalletAddress(accounts[0] || '');
+        setIsConnected(!!accounts[0]);
+      });
+    }
+  }, []);
 
-  const handleSubmit = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    // Handle sign up logic
-    console.log("Username:", username);
-    console.log("Email:", email);
-    console.log("Password:", password);
-  };
+    try {
+        const response = await axios.post('http://localhost:5000/auth/register', { email, password });
+        localStorage.setItem('userId', response.data.userId);
+        navigate('/role-selection');
+    } catch (error) {
+        console.error('Signup error', error);
+        alert('Signup failed');
+    }
+};
 
+  const connectMetaMask = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        setWalletAddress(accounts[0]);
+        setIsConnected(true);
+        navigate('/role-selection');
+      } catch (error) {
+        console.error("MetaMask connection error", error);
+        alert("MetaMask connection failed");
+      }
+    } else {
+      alert("Please install MetaMask");
+    }
+  };
+  
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#fcfaf6]">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h2 className="text-2xl font-bold text-[#0C3B2E] text-center mb-4">Welcome Aboard!</h2>
-        <p className="text-gray-600 text-center mb-6">Create your account to get started.</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-gray-700">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="border border-gray-300 rounded-md w-full p-2"
-              placeholder="Enter your username"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border border-gray-300 rounded-md w-full p-2"
-              placeholder="Enter your email"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border border-gray-300 rounded-md w-full p-2"
-              placeholder="Create a password"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-[#FFBA00] text-white font-semibold py-2 rounded-md hover:bg-[#e6a600]"
-          >
-            SIGN UP
-          </button>
-          <div className="text-center">
-            <a href="#" className="text-[#6D9773] hover:underline">Forgot your password?</a>
-          </div>
+    <div className="flex items-center justify-center min-h-screen bg-white px-4 sm:px-6">
+      <div className="w-full max-w-md p-4 sm:p-8 space-y-6 bg-white rounded-lg">
+        <h1 className="text-2xl sm:text-3xl font-bold text-green-900 text-center">Create Account</h1>
+        <form className="mt-8 space-y-4 sm:space-y-5" onSubmit={handleSignup}>
+          <input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="w-full px-3 py-3 border rounded-md" />
+          <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full px-3 py-3 border rounded-md" />
+          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full px-3 py-3 border rounded-md" />
+          <input type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="w-full px-3 py-3 border rounded-md" />
+          {walletAddress && <p className="text-sm text-green-700">Connected Wallet: {walletAddress}</p>}
+          <button type="submit" className="w-full py-3 px-4 bg-green-900 text-white rounded-md">Sign Up</button>
         </form>
-        <div className="text-center mt-4">
-          <span className="text-gray-600">Already have an account?</span>
-          <a href="/Signin" className="text-[#0C3B2E] hover:underline"> Log in</a>
-        </div>
+        <button onClick={connectMetaMask} className="w-full flex justify-center items-center py-3 px-4 border rounded-md bg-white text-green-900">
+          {isConnected ? 'Connected to MetaMask' : 'Login with MetaMask'}
+        </button>
       </div>
     </div>
   );
