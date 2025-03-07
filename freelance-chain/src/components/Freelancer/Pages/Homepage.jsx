@@ -22,42 +22,98 @@
 // }
 
 // export default Homepage
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 const Homepage = () => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  const handleSignOut = () => {
+    // Clear localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+  
+    // Redirect to login page
+    window.location.href = '/signin';
+  };
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <header className="border-b border-gray-200">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <a href="/" className="text-green-900 font-bold text-lg">FreelanceChain</a>
-            </div>
-            
-            <nav className="hidden md:flex space-x-6">
-              <a href="#" className="text-sm text-gray-700 hover:text-green-900">Home</a>
-              <a href="#" className="text-sm text-gray-700 hover:text-green-900">Overview</a>
-              <a href="#" className="text-sm text-gray-700 hover:text-green-900">Service Providers</a>
-              <a href="#" className="text-sm text-gray-700 hover:text-green-900">Help & Guide</a>
-            </nav>
-            
-            <div className="flex items-center space-x-4">
-            <Link to='/signin' className='text-sm bg-white text-green-900 border border-green-900 px-4 py-2 rounded-md hover:bg-green-100'>Login</Link>
-            <Link to='/signup' className='text-sm bg-green-900 text-white px-4 py-2 rounded-md hover:bg-green-800 ml-2'>Sign Up</Link>
-              {/* <button className="hidden md:block text-sm bg-white text-green-900 border border-green-900 px-4 py-2 rounded-md hover:bg-green-100">Login</button>
-              <button className="text-sm bg-green-900 text-white px-4 py-2 rounded-md hover:bg-green-800">Sign Up</button> */}
-            </div>
-            
-            <button className="md:hidden text-green-900">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+  <div className="container mx-auto px-4 py-3">
+    <div className="flex justify-between items-center">
+      <div className="flex items-center">
+        <a href="/" className="text-green-900 font-bold text-lg">FreelanceChain</a>
+      </div>
+
+      <nav className="hidden md:flex space-x-6">
+        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Home</a>
+        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Overview</a>
+        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Service Providers</a>
+        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Help & Guide</a>
+      </nav>
+
+      <div className="flex items-center space-x-4">
+        {user ? (
+          <div className="relative">
+            <button className="flex items-center text-sm text-green-900 hover:text-green-800">
+              <span>Hello, {user.name}</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 ml-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
+
+            {/* Dashboard Dropdown */}
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10">
+              <a
+                href="#"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Profile
+              </a>
+              <a
+                href="#"
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Settings
+              </a>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
-      
+        ) : (
+          <>
+            <Link
+              to="/signin"
+              className="text-sm bg-white text-green-900 border border-green-900 px-4 py-2 rounded-md hover:bg-green-100"
+            >
+              Login
+            </Link>
+            <Link
+              to="/signup"
+              className="text-sm bg-green-900 text-white px-4 py-2 rounded-md hover:bg-green-800 ml-2"
+            >
+              Sign Up
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+</header>
       {/* Hero Section */}
       <section className="py-8 md:py-12 bg-white">
         <div className="container mx-auto px-4">

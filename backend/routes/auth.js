@@ -1,106 +1,46 @@
-const crypto = require('crypto');
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const nodemailer = require('nodemailer');
 const Client = require('../models/Client');
 const Freelancer = require('../models/Freelancer');
+const crypto = require('crypto');
+const Web3 = require('web3');
 const router = express.Router();
+// Initialize Web3 with MetaMask provider
+const web3 = new Web3('http://localhost:8545');
+// Generate a random nonce
+const generateNonce = () => crypto.randomBytes(16).toString('hex');
 
-// Email Transporter (For Sending Verification Code)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    }
-});
-
-// Helper Function to Send Verification Code
-const sendVerificationCode = async (email, code) => {
-    await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'Your Verification Code',
-        text: `Your verification code is: ${code}`,
-    });
-};
-
-router.post('/register', async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email.endsWith('@gmail.com')) {
-        return res.status(400).json({ message: 'Only Google-validated emails are allowed' });
-    }
-
-    try {
-        let user = await User.findOne({ email });
-        if (user) return res.status(400).json({ message: 'Email already registered' });
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        user = new User({ email, password: hashedPassword, verificationCode });
-        await user.save();
-
-        await sendVerificationCode(email, verificationCode);
-        res.status(201).json({ message: 'Verification code sent to email', userId: user._id });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-//selectrole
-router.post('/select-role', async (req, res) => {
-    const { userId, role, name, extraData } = req.body;
-
-    try {
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        user.role = role;
-        await user.save();
-
-        if (role === 'client') {
-            await Client.create({ userId: user._id, name, company: extraData });
-        } else if (role === 'freelancer') {
-            await Freelancer.create({ userId: user._id, name, skills: extraData.skills, experience: extraData.experience });
-        }
-
-        res.status(200).json({ message: 'Role assigned successfully' });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
+// MetaMask Login: Step 1 - Request Nonce
 router.post('/metamask/request', async (req, res) => {
     const { walletAddress } = req.body;
 
-    if (!walletAddress) return res.status(400).json({ message: 'Wallet address required' });
+    if (!walletAddress) {
+        return res.status(400).json({ message: 'Wallet address required' });
+    }
 
     try {
         let user = await User.findOne({ walletAddress });
 
         // If the user does not exist, create a new entry
         if (!user) {
-            user = new User({ walletAddress, nonce: crypto.randomBytes(16).toString('hex') });
+            user = new User({ walletAddress, nonce: generateNonce() });
             await user.save();
         } else {
             // Update the nonce for security
-            user.nonce = crypto.randomBytes(16).toString('hex');
+            user.nonce = generateNonce();
             await user.save();
         }
 
+        console.log('Nonce generated for:', walletAddress, user.nonce); // Debugging
         res.status(200).json({ nonce: user.nonce });
-
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error in /metamask/request:', error); // Debugging
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
-const Web3 = require('web3');
 
+// MetaMask Login: Step 2 - Verify Signature
 router.post('/metamask/verify', async (req, res) => {
     const { walletAddress, signature } = req.body;
 
@@ -110,12 +50,15 @@ router.post('/metamask/verify', async (req, res) => {
 
     try {
         const user = await User.findOne({ walletAddress });
-        if (!user) return res.status(400).json({ message: 'Wallet not registered' });
+        if (!user) {
+            return res.status(400).json({ message: 'Wallet not registered' });
+        }
 
-        const web3 = new Web3();
         const message = `Nonce: ${user.nonce}`;
-
         const recoveredAddress = web3.eth.accounts.recover(message, signature);
+
+        console.log('Recovered Address:', recoveredAddress); // Debugging
+        console.log('Expected Address:', walletAddress); // Debugging
 
         if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
             return res.status(401).json({ message: 'Invalid signature' });
@@ -124,53 +67,135 @@ router.post('/metamask/verify', async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-        res.status(200).json({ message: 'MetaMask login successful', token });
-
+        // Return token and user data
+        res.status(200).json({
+            message: 'MetaMask login successful',
+            token,
+            user: {
+                _id: user._id,
+                walletAddress: user.walletAddress,
+                role: user.role,
+                name: user.name,
+            },
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error in /metamask/verify:', error); // Debugging
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+// Check if a wallet address is already registered
+router.post('/check-wallet', async (req, res) => {
+    const { walletAddress } = req.body;
+  
+    if (!walletAddress) {
+      return res.status(400).json({ message: 'Wallet address is required' });
+    }
+  
+    try {
+      const user = await User.findOne({ walletAddress });
+      res.status(200).json({ exists: !!user });
+    } catch (error) {
+      console.error('Check wallet error', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
+  // Register a new user
+  router.post('/register', async (req, res) => {
+    const { walletAddress, password } = req.body;
+  
+    if (!walletAddress || !password) {
+      return res.status(400).json({ message: 'Wallet address and password are required' });
+    }
+  
+    try {
+      // Check if the wallet address is already registered
+      const existingUser = await User.findOne({ walletAddress });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Wallet address is already registered' });
+      }
+  
+      // Create a new user
+      const user = new User({
+        walletAddress,
+        password, // In a real app, hash the password before saving
+        nonce: generateNonce(), // Generate a nonce for MetaMask login
+      });
+  
+      await user.save();
+  
+      // Generate JWT token
+      const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  
+      // Return token and user data
+      res.status(201).json({
+        message: 'User registered successfully',
+        token,
+        user: {
+          _id: user._id,
+          walletAddress: user.walletAddress,
+          role: user.role,
+          name: user.name,
+        },
+      });
+    } catch (error) {
+      console.error('Registration error', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
 
-router.post('/verify', async (req, res) => {
-    const { email, verificationCode } = req.body;
+// Role Selection
+// router.post('/select-role', async (req, res) => {
+//     const { userId, role, name, extraData } = req.body;
+  
+//     try {
+//       // Find the user by userId
+//       const user = await User.findById(userId);
+//       if (!user) {
+//         return res.status(404).json({ message: 'User not found' });
+//       }
+  
+//       // Update the user's role and name
+//       user.role = role;
+//       user.name = name;
+//       await user.save();
+  
+//       // Create a Client or Freelancer profile based on the selected role
+//       if (role === 'client') {
+//         await Client.create({ userId: user._id, company: extraData.company });
+//       } else if (role === 'freelancer') {
+//         await Freelancer.create({
+//           userId: user._id,
+//           skills: extraData.skills,
+//           experience: extraData.experience,
+//         });
+//       }
+  
+//       res.status(200).json({ message: 'Role assigned successfully', user });
+//     } catch (error) {
+//       console.error('Role selection error', error);
+//       res.status(500).json({ message: 'Server error' });
+//     }
+//   });
+// Role Selection
+router.post('/select-role', async (req, res) => {
+    const { userId, role, name, extraData } = req.body;
 
     try {
-        let user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: 'User not found' });
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (user.verified) return res.status(400).json({ message: 'User already verified' });
-
-        if (user.verificationCode !== verificationCode) {
-            return res.status(400).json({ message: 'Invalid verification code' });
-        }
-
-        user.verified = true;
-        user.verificationCode = null;
+        user.role = role;
+        user.name = name;
         await user.save();
 
-        res.status(200).json({ message: 'Email verified successfully' });
+        if (role === 'client') {
+            await Client.create({ userId: user._id, company: extraData.company });
+        } else if (role === 'freelancer') {
+            await Freelancer.create({ userId: user._id, skills: extraData.skills, experience: extraData.experience });
+        }
 
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        const user = await User.findOne({ email });
-
-        if (!user) return res.status(400).json({ message: 'User not found' });
-
-        if (!user.verified) return res.status(400).json({ message: 'Email not verified' });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-
-        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-        res.status(200).json({ message: 'Login successful', token });
-
+        res.status(200).json({ message: 'Role assigned successfully', user });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }

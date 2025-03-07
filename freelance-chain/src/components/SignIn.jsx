@@ -1,135 +1,290 @@
+// import React, { useState } from 'react';
+// import { useNavigate, Link } from 'react-router-dom';
+// import axios from 'axios';
+
+// const SignIn = () => {
+//   const [walletAddress, setWalletAddress] = useState('');
+//   const [password, setPassword] = useState('');
+//   const navigate = useNavigate();
+
+//   const handleWalletLogin = async (e) => {
+//     e.preventDefault();
+  
+//     try {
+//       const response = await axios.post('http://localhost:5000/auth/login', {
+//         walletAddress,
+//         password,
+//       });
+  
+//       const { token, user } = response.data;
+  
+//       // Save token and user data to localStorage
+//       localStorage.setItem('token', token);
+//       localStorage.setItem('user', JSON.stringify(user));
+//       localStorage.setItem('userId', user._id); // Save userId explicitly
+  
+//       // Redirect to home page or role selection page
+//       if (!user.role) {
+//         navigate('/role-selection');
+//       } else {
+//         navigate('/');
+//       }
+//     } catch (error) {
+//       console.error('Login error', error);
+//       alert('Login failed. Please check your credentials.');
+//     }
+//   };
+
+//   const handleMetaMaskLogin = async () => {
+//     if (window.ethereum) {
+//       try {
+//         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+//         const walletAddress = accounts[0];
+  
+//         // Step 1: Request nonce from the backend
+//         const nonceResponse = await axios.post('http://localhost:5000/auth/metamask/request', {
+//           walletAddress,
+//         });
+//         const { nonce } = nonceResponse.data;
+
+//         // If the user already exists, navigate to home
+//         if (nonceResponse.data.message === 'User already exists') {
+//           alert('User already exists! Redirecting to home.');
+//           navigate('/');
+//           return; // Stop further execution
+//         }
+  
+//         // Step 2: Sign the nonce
+//         const signature = await window.ethereum.request({
+//           method: 'personal_sign',
+//           params: [`Nonce: ${nonce}`, walletAddress],
+//         });
+  
+//         // Step 3: Verify the signature
+//         const verifyResponse = await axios.post('http://localhost:5000/auth/metamask/verify', {
+//           walletAddress,
+//           signature,
+//         });
+  
+//         const { token, user } = verifyResponse.data;
+  
+//         // Save token and user data to localStorage
+//         localStorage.setItem('token', token);
+//         localStorage.setItem('user', JSON.stringify(user));
+//         localStorage.setItem('userId', user._id); // Save userId explicitly
+  
+//         // Redirect to home page or role selection page
+//         if (!user.role) {
+//           navigate('/role-selection');
+//         } else {
+//           navigate('/');
+//         }
+//       } catch (error) {
+//         console.error('MetaMask login error', error);
+//         alert('MetaMask login failed');
+//       }
+//     } else {
+//       alert('Please install MetaMask');
+//     }
+//   };
+
+//   return (
+//     <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4 sm:px-6">
+//       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+//         <div className="text-center">
+//           <h2 className="text-2xl font-bold text-green-900">Welcome Back</h2>
+//           <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
+//         </div>
+
+//         {/* Wallet Address and Password Login Form */}
+//         <form className="mt-6 space-y-4" onSubmit={handleWalletLogin}>
+//           <div>
+//             <label htmlFor="walletAddress" className="block text-sm font-medium text-gray-700">
+//               Wallet Address
+//             </label>
+//             <input
+//               id="walletAddress"
+//               name="walletAddress"
+//               type="text"
+//               value={walletAddress}
+//               onChange={(e) => setWalletAddress(e.target.value)}
+//               required
+//               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+//               placeholder="Enter your wallet address"
+//             />
+//           </div>
+
+//           <div>
+//             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+//               Password
+//             </label>
+//             <input
+//               id="password"
+//               name="password"
+//               type="password"
+//               value={password}
+//               onChange={(e) => setPassword(e.target.value)}
+//               required
+//               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+//               placeholder="Enter your password"
+//             />
+//           </div>
+
+//           <div>
+//             <button
+//               type="submit"
+//               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-900 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+//             >
+//               Sign In
+//             </button>
+//           </div>
+//         </form>
+
+//         {/* Divider */}
+//         <div className="mt-6">
+//           <div className="relative">
+//             <div className="absolute inset-0 flex items-center">
+//               <div className="w-full border-t border-gray-300" />
+//             </div>
+//             <div className="relative flex justify-center text-sm">
+//               <span className="px-2 bg-white text-gray-500">Or continue with</span>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* MetaMask Login Button */}
+//         <div className="mt-6">
+//           <button
+//             onClick={handleMetaMaskLogin}
+//             className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+//           >
+//             <img
+//               src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+//               alt="MetaMask Logo"
+//               className="w-5 h-5 mr-2"
+//             />
+//             Login with MetaMask
+//           </button>
+//         </div>
+
+//         {/* Sign Up Link */}
+//         <div className="mt-6 text-center">
+//           <p className="text-sm text-gray-600">
+//             Don't have an account?{' '}
+//             <Link
+//               to="/signup"
+//               className="font-medium text-green-900 hover:text-green-800"
+//             >
+//               Sign Up
+//             </Link>
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default SignIn;
+
+
 import React, { useState } from 'react';
+ import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log({ email, password, rememberMe });
-  };
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-white px-4 sm:px-6">
-      <div className="w-full max-w-md p-4 sm:p-8 space-y-6 sm:space-y-8 bg-white rounded-lg shadow-md">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 sm:h-8 sm:w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z" />
-            </svg>
-          </div>
-        </div>
-        
-        {/* Welcome Text */}
-        <div className="text-center">
-          <h2 className="mt-4 sm:mt-6 text-xl sm:text-2xl font-bold text-gray-900">Welcome back</h2>
-          <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-600">Please enter your details to sign in</p>
-        </div>
-        
-        {/* Login Form */}
-        <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-3 sm:space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700">
-                Email or Wallet Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter your email or wallet address"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1 block w-full px-3 py-2 text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="••••••••"
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-xs sm:text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
-              
-              <div className="text-xs sm:text-sm">
-                <a 
-                  href="#" 
-                  className="font-medium hover:text-opacity-80"
-                  style={{ color: '#0C3B2E' }}
-                >
-                  Forgot password?
-                </a>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <button
-              type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-700"
-              style={{ backgroundColor: '#0C3B2E' }}
-            >
-              Sign in
-            </button>
-          </div>
-          
-          <div className="mt-3 sm:mt-4">
-            <button
-              type="button"
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-700"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M13.3 2.82L8.7 0.1C8.3 -0.1 7.7 -0.1 7.3 0.1L2.7 2.82C2.3 3.02 2 3.52 2 4.02V8.92C2 12.52 5.2 16.92 10 18.52C14.8 16.92 18 12.52 18 8.92V4.02C18 3.52 17.7 3.02 17.3 2.82L13.3 2.82Z" />
-              </svg>
-              Login with MetaMask
-            </button>
-          </div>
-        </form>
-        
-        {/* Sign Up Link */}
-        <div className="text-center mt-3 sm:mt-4">
-          <p className="text-xs sm:text-sm text-gray-600">
+    const handleMetaMaskLogin = async () => {
+        if (window.ethereum) {
+            try {
+                // Request account access
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const walletAddress = accounts[0];
+
+                // Step 1: Request nonce from the backend
+                const nonceResponse = await axios.post('http://localhost:5000/auth/metamask/request', {
+                    walletAddress,
+                });
+                const { nonce } = nonceResponse.data;
+
+                // Step 2: Sign the nonce
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [`Nonce: ${nonce}`, walletAddress],
+                });
+
+                // Step 3: Verify the signature
+                const verifyResponse = await axios.post('http://localhost:5000/auth/metamask/verify', {
+                    walletAddress,
+                    signature,
+                });
+
+                const { token, user } = verifyResponse.data;
+
+                // Save token and user data to localStorage
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('userId', user._id);
+
+                // Redirect based on user role
+                if (!user.role) {
+                    navigate('/role-selection');
+                } else {
+                    navigate('/');
+                }
+            } catch (error) {
+                console.error('MetaMask login error:', error.response?.data || error.message); // Debugging
+                setError('MetaMask login failed. Please try again.');
+            }
+        } else {
+            setError('Please install MetaMask to use this feature.');
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4 sm:px-6">
+            <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-green-900">Welcome Back</h2>
+                    <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
+                </div>
+
+                {error && (
+                    <div className="text-red-500 text-sm text-center mt-4">
+                        {error}
+                    </div>
+                )}
+
+                {/* MetaMask Login Button */}
+                <div className="mt-6">
+                    <button
+                        onClick={handleMetaMaskLogin}
+                        className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                        <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
+                            alt="MetaMask Logo"
+                            className="w-5 h-5 mr-2"
+                        />
+                        Login with MetaMask
+                    </button>
+                </div>
+                 {/* Sign Up Link */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <a 
-              href="#" 
-              className="font-medium hover:text-opacity-80"
-              style={{ color: '#0C3B2E' }}
+            <Link
+              to="/signup"
+              className="font-medium text-green-900 hover:text-green-800"
             >
-              Sign up
-            </a>
+              Sign Up
+            </Link>
           </p>
         </div>
-      </div>
-    </div>
-  );
+            </div>
+        </div>
+    );
 };
 
 export default SignIn;
