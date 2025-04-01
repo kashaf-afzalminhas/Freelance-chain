@@ -1,30 +1,10 @@
-// import React from 'react'
-// // import About from './About'
-// // import EndlessPossibilities from './EndlessPos'
-// // import UserFeedback from './UserFeedback'
-// import Hero from '../Cards/Hero'
-// import Navbar from '../Cards/Navbar'
-// import Categories from '../Cards/Categories'
-// import TopFreelancers from '../Cards/TopFreelancer'
-// import Footer from '../Cards/footer'
 
-// function Homepage() {
-//   return (
-//     <div>
-//       <Navbar />
-//       <Hero />
-//       <Categories />
-//       <TopFreelancers />
-      
-//       <Footer />
-//     </div>
-//   )
-// }
-
-// export default Homepage
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import cover from '../../../assets/Images/ab2.jpg'
+import Navbar from '../Cards/Navbar';
+
 const Homepage = () => {
   const user = JSON.parse(localStorage.getItem('user'));
   const handleSignOut = () => {
@@ -46,12 +26,7 @@ const Homepage = () => {
         <a href="/" className="text-green-900 font-bold text-lg">FreelanceChain</a>
       </div>
 
-      <nav className="hidden md:flex space-x-6">
-        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Home</a>
-        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Overview</a>
-        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Service Providers</a>
-        <a href="#" className="text-sm text-gray-700 hover:text-green-900">Help & Guide</a>
-      </nav>
+    <Navbar/>
 
       <div className="flex items-center space-x-4">
         {user ? (
@@ -132,9 +107,9 @@ const Homepage = () => {
             </div>
             <div className="w-full md:w-1/2">
               <img 
-                src="/api/placeholder/600/400" 
+                src={cover} 
                 alt="Freelance workspace with laptop and plant" 
-                className="rounded-lg shadow-md w-full h-auto"
+                className="rounded-lg shadow-md w-full h-1/2"
               />
             </div>
           </div>
