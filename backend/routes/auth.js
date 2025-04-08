@@ -6,8 +6,8 @@ const Freelancer = require('../models/Freelancer');
 const crypto = require('crypto');
 const Web3 = require('web3');
 const router = express.Router();
-// Initialize Web3 with MetaMask provider
-const web3 = new Web3('http://localhost:8545');
+// Initialize Web3 with Infura provider (or any public Ethereum node)
+const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID');
 // Generate a random nonce
 const generateNonce = () => crypto.randomBytes(16).toString('hex');
 
@@ -42,31 +42,83 @@ router.post('/metamask/request', async (req, res) => {
 
 // MetaMask Login: Step 2 - Verify Signature
 router.post('/metamask/verify', async (req, res) => {
+    console.log('=== MetaMask Verification Request ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request headers:', req.headers);
+
     const { walletAddress, signature } = req.body;
 
+    // Validate request body
     if (!walletAddress || !signature) {
-        return res.status(400).json({ message: 'Missing wallet address or signature' });
+        console.log('Validation failed:', {
+            hasWalletAddress: !!walletAddress,
+            hasSignature: !!signature
+        });
+        return res.status(400).json({ 
+            error: 'Missing required fields',
+            details: {
+                walletAddress: !walletAddress ? 'Wallet address is required' : undefined,
+                signature: !signature ? 'Signature is required' : undefined
+            }
+        });
     }
 
     try {
-        const user = await User.findOne({ walletAddress });
+        console.log('Looking up user with wallet:', walletAddress.toLowerCase());
+        const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+        
         if (!user) {
-            return res.status(400).json({ message: 'Wallet not registered' });
+            console.log('User not found in database');
+            return res.status(400).json({ 
+                error: 'Wallet not registered',
+                details: 'No user found with this wallet address'
+            });
+        }
+
+        console.log('Found user:', {
+            id: user._id,
+            walletAddress: user.walletAddress,
+            hasNonce: !!user.nonce
+        });
+
+        if (!user.nonce) {
+            console.log('User has no nonce');
+            return res.status(400).json({ 
+                error: 'Invalid nonce',
+                details: 'User has no nonce associated with their account'
+            });
         }
 
         const message = `Nonce: ${user.nonce}`;
-        const recoveredAddress = web3.eth.accounts.recover(message, signature);
+        console.log('Verifying message:', message);
 
-        console.log('Recovered Address:', recoveredAddress); // Debugging
-        console.log('Expected Address:', walletAddress); // Debugging
+        try {
+            const recoveredAddress = web3.eth.accounts.recover(message, signature);
+            console.log('Recovery results:', {
+                recoveredAddress,
+                expectedAddress: walletAddress.toLowerCase(),
+                match: recoveredAddress.toLowerCase() === walletAddress.toLowerCase()
+            });
 
-        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-            return res.status(401).json({ message: 'Invalid signature' });
+            if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+                console.log('Signature verification failed');
+                return res.status(401).json({ 
+                    error: 'Invalid signature',
+                    details: 'The signature does not match the expected wallet address'
+                });
+            }
+        } catch (recoveryError) {
+            console.error('Error recovering address:', recoveryError);
+            return res.status(400).json({
+                error: 'Signature recovery failed',
+                details: recoveryError.message
+            });
         }
 
         // Generate JWT token
         const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
+        console.log('Verification successful, generating response');
         // Return token and user data
         res.status(200).json({
             message: 'MetaMask login successful',
@@ -79,8 +131,11 @@ router.post('/metamask/verify', async (req, res) => {
             },
         });
     } catch (error) {
-        console.error('Error in /metamask/verify:', error); // Debugging
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error('Error in /metamask/verify:', error);
+        res.status(500).json({ 
+            error: 'Server error',
+            details: error.message
+        });
     }
 });
 // Check if a wallet address is already registered

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
   const [findWorkOpen, setFindWorkOpen] = useState(false);
   const [deliverProjectsOpen, setDeliverProjectsOpen] = useState(false);
+  const [myProjectsOpen, setMyProjectsOpen] = useState(false);
  
 
   const toggleFindWork = () => {
@@ -15,6 +17,12 @@ const Navbar = () => {
     setDeliverProjectsOpen(!deliverProjectsOpen);
     setFindWorkOpen(false);
     setMyProjectsOpen(false);
+  };
+
+  const toggleMyProjects = () => {
+    setMyProjectsOpen(!myProjectsOpen);
+    setFindWorkOpen(false);
+    setDeliverProjectsOpen(false);
   };
 
 
@@ -46,24 +54,30 @@ const Navbar = () => {
         
         {findWorkOpen && (
           <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10 border border-gray-100">
-            <a
-              href="/jobs"
+            <Link
+              to="/jobs"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
             >
               Browse Jobs
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="/browse-projects"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
+            >
+              Browse Projects
+            </Link>
+            <Link
+              to="#"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
             >
               Proposals & Offers
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="#"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
             >
               Saved Jobs
-            </a>
+            </Link>
           </div>
         )}
       </div>
@@ -93,30 +107,30 @@ const Navbar = () => {
         
         {deliverProjectsOpen && (
           <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10 border border-gray-100">
-            <a
-              href="#"
+            <Link
+              to="/my-projects"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
             >
-              Active Projects
-            </a>
-            <a
-              href="#"
+              My Projects
+            </Link>
+            <Link
+              to="/my-projects"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
             >
-              History
-            </a>
+              Create Project
+            </Link>
           </div>
         )}
       </div>
       
       {/* My Projects Dropdown */}
       <a
-        href="/createproject"
+        href="/my-projects"
         className="text-gray-700 hover:text-green-800 transition-colors font-medium"
       >
         My Projects
       </a>
-        
+          
    
  
       
