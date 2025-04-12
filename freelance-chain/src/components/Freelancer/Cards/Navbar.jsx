@@ -141,6 +141,12 @@ const Navbar = () => {
       >
         Messages
       </a>
+      <a
+        href="/create-job"
+        className="text-gray-700 hover:text-green-800 transition-colors font-medium"
+      >
+        Create Jobddss
+      </a>
     </nav>
   );
 };
