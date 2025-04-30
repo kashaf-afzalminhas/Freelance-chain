@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useRef } from 'react';
 import ChatBubble from './ChatBubble';
 import MessageInput from './MessageInput';
@@ -42,7 +44,6 @@ const ChatWindow = ({ conversationId, currentUser, otherUser }) => {
     const handleNewMessage = (message) => {
       if (message.conversationId === conversationId) {
         setMessages(prev => {
-          // Check if message already exists to prevent duplicates
           const messageExists = prev.some(msg => 
             msg._id === message._id || 
             (msg.text === message.text && msg.senderId === message.senderId)
@@ -51,7 +52,7 @@ const ChatWindow = ({ conversationId, currentUser, otherUser }) => {
           
           return [...prev, {
             ...message,
-            _id: Date.now().toString(), // Temporary ID for socket messages
+            _id: Date.now().toString(),
             senderId: message.senderId
           }];
         });
@@ -128,25 +129,52 @@ const ChatWindow = ({ conversationId, currentUser, otherUser }) => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="p-3 border-b flex items-center gap-3">
+    <div className="flex flex-col h-full bg-white rounded-lg shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200 bg-primary text-white flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold">
+          {userDetails.name?.charAt(0) || 'U'}
+        </div>
         <div>
-          <h2 className="font-semibold">{userDetails.name || 'User'}</h2>
-          <p className="text-sm text-gray-500">Role: {userDetails.role || 'N/A'}</p>
+          <h2 className="font-heading text-lg font-bold">{userDetails.name || 'User'}</h2>
+          <p className="font-body text-sm text-white/90">
+            {userDetails.role || 'N/A'} • {isTyping ? 'typing...' : 'online'}
+          </p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col">
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto p-4 bg-gray-50 flex flex-col space-y-3">
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
-            <p>Loading messages...</p>
+            <div className="animate-pulse font-body text-gray-500">
+              Loading messages...
+            </div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex justify-center items-center h-full text-gray-500">
-            <p>No messages yet. Start the conversation!</p>
+          <div className="flex flex-col justify-center items-center h-full text-center p-6">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <h3 className="font-heading text-lg text-gray-600 mb-1">No messages yet</h3>
+            <p className="font-body text-gray-500 max-w-md">
+              Start the conversation with {userDetails.name || 'your contact'}
+            </p>
           </div>
         ) : (
           <>
+            <div className="text-center my-2">
+              <span className="inline-block px-2 py-1 text-xs font-body text-gray-500 bg-gray-100 rounded-full">
+                {new Date(messages[0]?.createdAt).toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </span>
+            </div>
+            
             {messages.map(message => (
               <ChatBubble
                 key={message._id}
@@ -156,16 +184,21 @@ const ChatWindow = ({ conversationId, currentUser, otherUser }) => {
                 status="read"
               />
             ))}
+            
             {isTyping && (
-              <TypingIndicator username={otherUser.name} className="mt-2" />
+              <TypingIndicator username={otherUser.name} />
             )}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
 
-      <div className="p-3 border-t">
-        <MessageInput onSendMessage={handleSendMessage} />
+      {/* Input area */}
+      <div className="p-3 border-t border-gray-200 bg-white">
+        <MessageInput 
+          onSendMessage={handleSendMessage} 
+          className="border border-gray-300 rounded-full focus:ring-2 focus:ring-highlight focus:border-transparent"
+        />
       </div>
     </div>
   );

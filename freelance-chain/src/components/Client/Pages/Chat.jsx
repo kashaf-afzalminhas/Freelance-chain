@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../../../AuthContext';
 import RecentChats from '../../../components/RecentChats';
@@ -96,7 +98,11 @@ const ChatPage = () => {
   }, [currentUserId, selectedConversation]);
 
   if (!currentUser) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen font-body text-primary">
+        Loading...
+      </div>
+    );
   }
 
   const handleSelectConversation = (conversationData) => {
@@ -171,27 +177,48 @@ const ChatPage = () => {
   const handleBackToList = () => setShowChatMobile(false);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-50">
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+          {toasts.map((toast, index) => (
+            <div 
+              key={index}
+              className={`p-4 rounded-lg shadow-lg font-body ${
+                toast.variant === 'destructive' ? 'bg-red-100 text-red-800' : 'bg-primary text-white'
+              }`}
+            >
+              <h3 className="font-bold font-heading">{toast.title}</h3>
+              <p>{toast.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Sidebar */}
       <div
-        className={`bg-white w-full md:w-80 border-r ${
+        className={`bg-white w-full md:w-96 lg:w-80 border-r border-gray-200 ${
           isMobile && showChatMobile ? 'hidden' : 'flex flex-col'
         }`}
       >
         {/* Tabs */}
-        <div className="flex border-b">
+        <div className="flex border-b border-gray-200">
           <button
-            className={`flex-1 py-3 text-center ${
-              activeTab === 'recent' ? 'border-b-2 border-primary font-medium' : 'text-gray-500'
-            }`}
+            className={`flex-1 py-4 text-center font-heading text-lg md:text-base ${
+              activeTab === 'recent' 
+                ? 'border-b-2 border-accent text-accent font-bold' 
+                : 'text-gray-600 hover:text-primary'
+            } transition-colors duration-200`}
             onClick={() => setActiveTab('recent')}
           >
             Recent Chats
           </button>
           <button
-            className={`flex-1 py-3 text-center ${
-              activeTab === 'users' ? 'border-b-2 border-primary font-medium' : 'text-gray-500'
-            }`}
+            className={`flex-1 py-4 text-center font-heading text-lg md:text-base ${
+              activeTab === 'users' 
+                ? 'border-b-2 border-accent text-accent font-bold' 
+                : 'text-gray-600 hover:text-primary'
+            } transition-colors duration-200`}
             onClick={() => setActiveTab('users')}
           >
             All Users
@@ -199,7 +226,7 @@ const ChatPage = () => {
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           {activeTab === 'recent' ? (
             <RecentChats
               currentUserId={currentUserId}
@@ -219,15 +246,21 @@ const ChatPage = () => {
 
       {/* Chat window */}
       <div
-        className={`flex-1 ${
-          isMobile && !showChatMobile ? 'hidden' : 'flex flex-col'
-        }`}
+        className={`flex-1 flex flex-col ${
+          isMobile && !showChatMobile ? 'hidden' : 'flex'
+        } bg-gray-50`}
       >
         {selectedConversation && selectedUser ? (
           <>
             {isMobile && (
-              <button className="p-2 bg-gray-200 text-gray-700" onClick={handleBackToList}>
-                ← Back to list
+              <button 
+                className="p-3 bg-primary text-white flex items-center gap-2 font-heading"
+                onClick={handleBackToList}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Back to conversations
               </button>
             )}
             <ChatWindow
@@ -237,8 +270,22 @@ const ChatPage = () => {
             />
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            <p>Select a conversation to start chatting</p>
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 p-4">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <h3 className="text-xl font-heading text-gray-600 mb-2">No conversation selected</h3>
+            <p className="font-body text-center max-w-md">
+              {activeTab === 'recent' 
+                ? 'Select a recent conversation or switch to "All Users" to start a new chat'
+                : 'Select a user to start a conversation'}
+            </p>
           </div>
         )}
       </div>
