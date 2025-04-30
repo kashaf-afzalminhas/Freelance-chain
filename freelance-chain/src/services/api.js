@@ -9,6 +9,29 @@ const api = axios.create({
   },
 });
 
+// Users
+export const getAllUsers = () => api.get('/users/all');
+export const getUserById = (id) => api.get(`/users/${id}`);
+export const searchUsers = (query) => api.get(`/users/search/${query}`);
+
+// Conversations
+export const getUserConversations = (userId) => 
+  api.get(`/conversations/${userId}`);
+export const getConversationBetweenUsers = (firstUserId, secondUserId) => 
+  api.get(`/conversations/find/${firstUserId}/${secondUserId}`);
+export const createConversation = (senderId, receiverId) => 
+  api.post('/conversations', { senderId, receiverId });
+export const getConversationById = (id) => 
+  api.get(`/conversations/conversation/${id}`); // New route for getting a conversation by ID
+
+// Messages
+export const getMessagesByConversation = (conversationId) => 
+  api.get(`/messages/${conversationId}`);
+export const sendMessage = (message) => 
+  api.post('/messages', message);
+export const markMessageAsRead = (messageId) => 
+  api.patch(`/messages/${messageId}/read`); // New route for marking a message as read
+
 // Add token to requests if it exists
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');

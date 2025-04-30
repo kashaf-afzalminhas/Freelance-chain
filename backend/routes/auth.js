@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Client = require('../models/Client');
 const Freelancer = require('../models/Freelancer');
+const auth = require('../middleware/auth');
 const crypto = require('crypto');
 const Web3 = require('web3');
 const router = express.Router();
@@ -254,6 +255,10 @@ router.post('/select-role', async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
+});
+// Get current users 
+router.get('/current-user', auth, (req, res) => {
+    res.json(req.user); // The `auth` middleware adds `req.user`
 });
 
 

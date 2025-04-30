@@ -136,7 +136,7 @@ const Navbar = () => {
       
       {/* Messages Link */}
       <a
-        href="#"
+        href="/chat"
         className="text-gray-700 hover:text-green-800 transition-colors font-medium"
       >
         Messages

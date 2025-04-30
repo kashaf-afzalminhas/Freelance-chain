@@ -22,6 +22,7 @@ const auth = async (req, res, next) => {
 
         // Add user to request object
         req.user = user;
+        console.log('Authenticated user:', req.user);
         next();
     } catch (error) {
         res.status(401).json({ message: 'Token is not valid' });
