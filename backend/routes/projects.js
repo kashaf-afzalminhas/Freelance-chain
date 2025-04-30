@@ -9,6 +9,21 @@ const path = require('path');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// Get user's projects
+router.get('/my-projects', auth, async (req, res) => {
+  try {
+    const projects = await Project.find({ freelancer: req.user.id })
+      .sort({ createdAt: -1 });
+    res.json(projects);
+  } catch (err) {
+    console.error('Error fetching user projects:', err);
+    res.status(500).json({ 
+      message: 'Error fetching your projects',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    });
+  }
+});
+
 // Create a new project
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
   try {

@@ -114,7 +114,7 @@ const Navbar = () => {
               My Projects
             </Link>
             <Link
-              to="/my-projects"
+              to="/createproject"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800"
             >
               Create Project
