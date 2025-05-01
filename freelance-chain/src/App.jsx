@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import './index.css'
 import './App.css'
+
 import Homepage from './components/Freelancer/Pages/Homepage'
 import SignIn from "./components/SignIn";
 import SignUp from "./components/SignUp";
@@ -16,6 +17,10 @@ import ProjectRequirements from "./components/Freelancer/Cards/projectRequiremen
 import ProjectPricing from "./components/Freelancer/Cards/projectPricing";
 import MyProjects from "./components/Freelancer/Pages/MyProjects";
 import BrowseProjects from "./components/Freelancer/Pages/BrowseProjects";
+import JobList from "./components/Freelancer/Pages/JobListPage";
+import JobDetail from "./components/Freelancer/Pages/JobDetails";
+import CreateJob from "./components/Client/Pages/JobCreationWizard";
+
 
 function App() {
   return (
@@ -35,6 +40,10 @@ function App() {
         <Route path="/projectPricing" element={<ProjectPricing />} />
         <Route path="/my-projects" element={<MyProjects />} />
         <Route path="/browse-projects" element={<BrowseProjects />} />
+        <Route path="/job-list" element={<JobList />} />
+        <Route path="/job-details/:id" element={<JobDetail />} />
+        <Route path="/create-job" element={<CreateJob />} />
+        
       </Routes>
     </Router>
   );
