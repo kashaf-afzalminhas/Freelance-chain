@@ -127,7 +127,7 @@ function JobListPage() {
 
             <div className="space-y-4">
               {jobs.map((job, index) => (
-                <Link to={`/job-details/${job._id}`} key={index}>
+                <Link to={`/jobs/${job.id}/bid`} key={index}>
                   <JobCard
                     {...job}
                     createdAt={format(new Date(job.createdAt), 'EEEE, MMMM do, yyyy h:mm a')}

@@ -16,11 +16,13 @@ app.use((req, res, next) => {
     next();
 });
 
-// app.use(cors({
-//     origin: 'http://localhost:5173',
-//     credentials: true
-// }));
-app.use(cors());
+// Configure CORS
+app.use(cors({
+    origin: '*', // Temporarily allow all origins for testing
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 mongoose.connect(process.env.MONGO_URI, {
@@ -33,6 +35,7 @@ mongoose.connect(process.env.MONGO_URI, {
 app.use('/auth', require('./routes/auth'));
 app.use('/jobs', require('./routes/jobs'));
 app.use('/projects', require('./routes/projects'));
+app.use('/bids', require('./routes/bidRoutes'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

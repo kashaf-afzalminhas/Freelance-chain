@@ -14,9 +14,24 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('Adding token to request:', token); // Debug log
+  } else {
+    console.warn('No token found in localStorage'); // Debug log
   }
   return config;
 });
+
+// Add response interceptor to log responses
+api.interceptors.response.use(
+  (response) => {
+    console.log('Response received:', response.data); // Debug log
+    return response;
+  },
+  (error) => {
+    console.error('Response error:', error.response?.data || error.message); // Debug log
+    return Promise.reject(error);
+  }
+);
 
 export const projectService = {
   // Get all projects
@@ -118,3 +133,64 @@ export const projectService = {
     }
   },
 };
+export const bidService = {
+  submitBid: async (bidData) => {
+    try {
+      // Log the complete bid data
+      console.log('Submitting bid with data:', JSON.stringify(bidData, null, 2));
+      
+      // Log the current token
+      const token = localStorage.getItem('token');
+      console.log('Current auth token:', token);
+
+      const response = await api.post('/bids/submit', bidData);
+      console.log('Bid submission response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Submit bid error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+        console.error('Error headers:', error.response.headers);
+        throw error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  // Get bids for a specific job
+  getBidsForJob: async (jobId) => {
+    try {
+      const response = await api.get(`/bids/job/${jobId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get bids error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get bids submitted by current user
+  getMyBids: async () => {
+    try {
+      const response = await api.get('/bids/my-bids');
+      return response.data;
+    } catch (error) {
+      console.error('Get my bids error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Withdraw a bid
+  withdrawBid: async (bidId) => {
+    try {
+      const response = await api.delete(`/bids/${bidId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Withdraw bid error:', error);
+      throw error.response?.data || error.message;
+    }
+  }
+};
+
+
+

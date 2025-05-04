@@ -20,10 +20,11 @@ import BrowseProjects from "./components/Freelancer/Pages/BrowseProjects";
 import JobList from "./components/Freelancer/Pages/JobListPage";
 import JobDetail from "./components/Freelancer/Pages/JobDetails";
 import CreateJob from "./components/Client/Pages/JobCreationWizard";
-
-
+import BidForm from "./components/Freelancer/Pages/BidForm";
+import { Web3Provider } from "./context/Web3Context";
 function App() {
   return (
+    <Web3Provider> 
     <Router>
       <Routes>
         <Route path="/" element={<Homepage />} />
@@ -43,9 +44,10 @@ function App() {
         <Route path="/job-list" element={<JobList />} />
         <Route path="/job-details/:id" element={<JobDetail />} />
         <Route path="/create-job" element={<CreateJob />} />
-        
+        <Route path="/jobs/:jobId/bid" element={<BidForm />} />
       </Routes>
     </Router>
+    </Web3Provider>
   );
 }
 
