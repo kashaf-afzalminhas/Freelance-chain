@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import BidForm from './BidForm';
 
 const JobDetail = () => {
   const { id } = useParams();
   const [job, setJob] = useState(null);
+  const [showBidForm, setShowBidForm] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -30,10 +32,16 @@ const JobDetail = () => {
       <p className="text-gray-600">Duration: {job.duration}</p>
       <p className="text-gray-600">Skills: {job.skills.join(', ')}</p>
       <p className="text-gray-600">Status: {job.status}</p>
-      <p className="text-gray-600">Location: {job.location}</p>
-      <p className="text-gray-600">Time: {job.time}</p>
       <p className="text-gray-600">Posted: {format(new Date(job.createdAt), 'EEEE, MMMM do, yyyy h:mm a')}</p>
-      {/* Add more job details as needed */}
+      
+      <button 
+        onClick={() => setShowBidForm(!showBidForm)}
+        className="mt-4 bg-[#6D9773] text-white px-4 py-2 rounded-md hover:bg-[#5c8162]"
+      >
+        {showBidForm ? 'Hide Bid Form' : 'Place a Bid'}
+      </button>
+
+      {showBidForm && <BidForm jobId={id} />}
     </div>
   );
 };

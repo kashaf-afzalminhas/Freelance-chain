@@ -28,10 +28,16 @@ exports.getJobById = async (req, res) => {
 // Create new job
 exports.createJob = async (req, res) => {
   try {
-    const { title, description, budget, duration, skills, levels } = req.body; // Include levels
-    const jobData = { title, description, budget, duration, skills, levels }; // Add levels to jobData
-
-    // Save the job to the database
+    const { title, description, budget, duration, skills, levels } = req.body;
+    const jobData = { 
+      title, 
+      description, 
+      budget, 
+      duration, 
+      skills, 
+      levels,
+      clientId: req.user._id // Add the authenticated user's ID
+    };
     const newJob = new Job(jobData);
     await newJob.save();
 
@@ -78,5 +84,16 @@ exports.submitProposal = async (req, res) => {
     res.json(updatedJob);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// Add this to your jobController.js
+exports.getMyJobs = async (req, res) => {
+  try {
+    // Get jobs where clientId matches the logged-in user's ID
+    const jobs = await Job.find({ clientId: req.user._id }).sort({ createdAt: -1 });
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

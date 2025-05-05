@@ -367,10 +367,10 @@ const Navbar = () => {
                       Browse Projects
                     </Link>
                     <Link
-                      to="#"
+                      to="my-jobs"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
                     >
-                      Proposals & Offers
+                      My Jobs
                     </Link>
                     <Link
                       to="#"
@@ -556,10 +556,10 @@ const Navbar = () => {
                     Browse Projects
                   </Link>
                   <Link
-                    to="#"
+                    to="my-jobs"
                     className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
                   >
-                    Proposals & Offers
+                    My Jobs
                   </Link>
                   <Link
                     to="#"

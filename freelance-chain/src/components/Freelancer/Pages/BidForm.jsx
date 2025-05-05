@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../../../context/Web3Context";
 import { bidService } from "../../../services/api";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-const BidForm = ({ jobId: propJobId }) => {
+const BidForm = ({ jobId }) => {
   const [proposal, setProposal] = useState("");
   const [bidAmount, setBidAmount] = useState("");
   const [estimatedTime, setEstimatedTime] = useState("7 days");
@@ -11,17 +11,11 @@ const BidForm = ({ jobId: propJobId }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { account } = useWeb3();
   const navigate = useNavigate();
-  
-  // Get jobId from URL params
-  const params = useParams();
-  const jobId = propJobId || params.jobId;
 
-  // Validate jobId on component mount
   useEffect(() => {
-    if (!jobId || jobId === ":jobId") {
+    if (!jobId) {
       setError("Invalid job ID. Please navigate to this page from a valid job listing.");
       console.error("Invalid jobId:", jobId);
-      // Optionally redirect back to jobs list
       navigate('/jobs');
     }
   }, [jobId, navigate]);
@@ -34,7 +28,7 @@ const BidForm = ({ jobId: propJobId }) => {
       return;
     }
     
-    if (!jobId || jobId === ":jobId") {
+    if (!jobId) {
       setError("Invalid job ID. Cannot submit bid.");
       return;
     }
@@ -63,10 +57,7 @@ const BidForm = ({ jobId: propJobId }) => {
         freelancerAddress: account
       };
 
-      console.log('Submitting bid data:', bidData);
-
       const result = await bidService.submitBid(bidData);
-      console.log('Bid submission result:', result);
 
       if (result.success) {
         alert("Bid submitted successfully!");
@@ -74,7 +65,6 @@ const BidForm = ({ jobId: propJobId }) => {
         setBidAmount("");
         setEstimatedTime("7 days");
         setError("");
-        // Redirect to job page or bids list
         navigate(`/jobs/${jobId}`);
       } else {
         throw new Error(result.message || "Bid submission failed");
@@ -88,7 +78,7 @@ const BidForm = ({ jobId: propJobId }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden mt-6">
       <div className="bg-[#0C3B2E] py-4 px-6">
         <h2 className="text-2xl font-bold text-white">Submit Your Bid</h2>
       </div>

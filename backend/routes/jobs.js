@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jobController = require('../controllers/jobController');
-
+const auth = require('../middleware/auth');
 // Create a new job
 router.post('/', jobController.createJob);
 
@@ -16,5 +16,7 @@ router.put('/:id/status', jobController.updateJobStatus);
 
 // Submit a proposal
 router.post('/:id/proposals', jobController.submitProposal);
+// Add this to your jobs.js routes
+router.get('/my-jobs', auth, jobController.getMyJobs);
 
 module.exports = router;

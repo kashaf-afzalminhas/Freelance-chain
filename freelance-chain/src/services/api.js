@@ -14,24 +14,9 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('Adding token to request:', token); // Debug log
-  } else {
-    console.warn('No token found in localStorage'); // Debug log
   }
   return config;
 });
-
-// Add response interceptor to log responses
-api.interceptors.response.use(
-  (response) => {
-    console.log('Response received:', response.data); // Debug log
-    return response;
-  },
-  (error) => {
-    console.error('Response error:', error.response?.data || error.message); // Debug log
-    return Promise.reject(error);
-  }
-);
 
 export const projectService = {
   // Get all projects
@@ -191,6 +176,57 @@ export const bidService = {
     }
   }
 };
+// Add this to your existing api.js file, alongside projectService and bidService
+// Add this to your existing api.js file, alongside projectService and bidService
+export const jobService = {
+  // Get all jobs
+  getJobs: async () => {
+    try {
+      const response = await api.get('/jobs');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 
+  // Get jobs posted by current user
+  getMyJobs: async () => {
+    try {
+      const response = await api.get('/jobs/my-jobs');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 
+  // Create a new job
+  createJob: async (jobData) => {
+    try {
+      const response = await api.post('/jobs', jobData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Update job status
+  updateJobStatus: async (id, status) => {
+    try {
+      const response = await api.put(`/jobs/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Submit a proposal (if needed)
+  submitProposal: async (jobId, proposalData) => {
+    try {
+      const response = await api.post(`/jobs/${jobId}/proposals`, proposalData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  }
+};
 
