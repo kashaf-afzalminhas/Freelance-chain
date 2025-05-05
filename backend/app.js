@@ -35,48 +35,6 @@
 // const PORT = process.env.PORT || 5000;
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-// const express = require('express');
-// const cors = require('cors');
-// const mongoose = require('mongoose');
-// require('dotenv').config();
-// const path = require('path');
-// const setupSocket = require('./socket'); 
-// const app = express();
-// const http = require('http');
-// app.use(express.json()); 
-// const server = http.createServer(app);
-// // ✅ Now logging middleware can read the body properly
-// app.use((req, res, next) => {
-//     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-//     console.log('Headers:', req.headers);
-//     console.log('Body:', req.body);
-//     next();
-// });
-
-// app.use(cors({
-//     origin: 'http://localhost:5173',
-//     credentials: true
-// }));
-
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// mongoose.connect(process.env.MONGO_URI, {
-//     useNewUrlParser: true,
-//     useUnifiedTopology: true
-// })
-//     .then(() => console.log('MongoDB connected'))
-//     .catch(err => console.log(err));
-
-// app.use('/auth', require('./routes/auth'));
-// app.use('/jobs', require('./routes/jobs'));
-// app.use('/messages', require('./routes/message'))
-// const PORT = process.env.PORT || 5000;
-
-// setupSocket(server);
-
-// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -107,14 +65,14 @@ mongoose.connect(process.env.MONGO_URI, {
 // Routes
 app.use('/auth', require('./routes/auth'));
 app.use('/jobs', require('./routes/jobs'));
+app.use('/projects', require('./routes/projects'));
 app.use('/messages', require('./routes/message'));
 app.use("/users", require("./routes/users"));
 app.use("/conversations", require("./routes/conversation"));
-app.use("/messages", require("./routes/message"));
+app.use('/profile', require('./routes/profile'));
+
 // Attach Socket.IO to the server
 setupSocket(server);
-
-// Start the server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

@@ -145,7 +145,7 @@ const App = () => {
                   }
                 /> */}
                 
-                <Route path="/chat" element={<Index />} />
+                <Route path="/messages" element={<Index />} />
                 {/* <Route path="*" element={<NotFound />} /> */}
               </Routes>
             </BrowserRouter>

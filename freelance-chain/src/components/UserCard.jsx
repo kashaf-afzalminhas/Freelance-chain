@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import Avatar from './Avatar';
 import { cn } from '../lib/utils';
