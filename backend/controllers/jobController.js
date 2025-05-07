@@ -87,13 +87,22 @@ exports.submitProposal = async (req, res) => {
   }
 };
 
-// Add this to your jobController.js
+// In jobController.js
 exports.getMyJobs = async (req, res) => {
   try {
-    // Get jobs where clientId matches the logged-in user's ID
-    const jobs = await Job.find({ clientId: req.user._id }).sort({ createdAt: -1 });
+    console.log('Fetching jobs for user:', req.user._id);
+    
+    const jobs = await Job.find({ clientId: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate('clientId', 'name email'); // Optional: populate client info
+    
+    console.log(`Found ${jobs.length} jobs for user ${req.user._id}`);
     res.json(jobs);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error in getMyJobs:', error);
+    res.status(500).json({ 
+      message: 'Server error while fetching your jobs',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };

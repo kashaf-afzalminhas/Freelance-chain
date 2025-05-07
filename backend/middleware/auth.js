@@ -9,10 +9,10 @@ const auth = async (req, res, next) => {
         if (!token) {
             return res.status(401).json({ message: 'No token, authorization denied' });
         }
-
+        console.log('Token received:', token);
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
+        console.log('Decoded token:', decoded);
         // Find user by id
         const user = await User.findById(decoded.userId);
         
@@ -22,6 +22,7 @@ const auth = async (req, res, next) => {
 
         // Add user to request object
         req.user = user;
+        console.log('Authenticated user:', req.user);
         next();
     } catch (error) {
         res.status(401).json({ message: 'Token is not valid' });

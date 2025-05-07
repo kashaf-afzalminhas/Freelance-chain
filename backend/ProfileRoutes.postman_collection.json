@@ -1,0 +1,100 @@
+{
+  "info": {
+    "name": "Profile Routes",
+    "_postman_id": "d3e01234-abcd-5678-efgh-90ijklmno123",
+    "description": "Collection for testing profile-related routes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Authenticated User Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["profile"]
+        }
+      }
+    },
+    {
+      "name": "Update User Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Name\",\n  \"bio\": \"Updated bio\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/profile",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["profile"]
+        }
+      }
+    },
+    {
+      "name": "Upload Profile Image",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "profileImage",
+              "type": "file",
+              "src": "/path/to/your/image.jpg"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://localhost:5000/profile/image",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["profile", "image"]
+        }
+      }
+    },
+    {
+      "name": "Get Public Profile by ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/profile/public/{{userId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["profile", "public", "{{userId}}"]
+        }
+      }
+    }
+  ],
+  "event": []
+}

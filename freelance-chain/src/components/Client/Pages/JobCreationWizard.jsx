@@ -7,11 +7,11 @@ import ExperienceLevelForm from "../Cards/JobExperience";
 import BudgetForm from "../Cards/JobBudget";
 import ScopeEstimator from "../Cards/scope";
 import JobPostConfirmation from "../Cards/JobPostConfirm";
+import { jobService } from '../../../services/api';
 
 const JobCreationWizard = () => {
   const navigate = useNavigate();
 
-  // Centralized state for all steps
   const [jobData, setJobData] = useState({
     title: "",
     description: "",
@@ -22,37 +22,31 @@ const JobCreationWizard = () => {
   });
 
   const [currentStep, setCurrentStep] = useState(0);
+  const [error, setError] = useState(null);
 
   const onSubmit = async () => {
     try {
       // Validate jobData
-      if (!jobData.title || !jobData.description || !jobData.budget || !jobData.duration || !jobData.levels || jobData.skills.length === 0) {
-        alert("Please fill out all fields before submitting.");
+      if (!jobData.title || !jobData.description || !jobData.budget || 
+          !jobData.duration || !jobData.levels || jobData.skills.length === 0) {
+        setError("Please fill out all fields before submitting.");
         return;
       }
 
-      console.log("Submitting jobData:", jobData); // Debugging: Log the jobData object
-      const response = await fetch("http://localhost:5000/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(jobData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to post job.");
+      setError(null);
+      const response = await jobService.createJob(jobData);
+      
+      if (response.success) {
+        navigate("/my-jobs");
+      } else {
+        setError(response.message || "Failed to post job");
       }
-
-      alert("Job posted successfully!");
-      navigate("/");
-    } catch (error) {
-      console.error("Error posting job:", error);
-      alert("An error occurred while posting the job.");
+    } catch (err) {
+      console.error("Error posting job:", err);
+      setError(err.message || "Failed to post job");
     }
   };
 
-  // Steps array
   const steps = [
     <JobTitleForm
       jobData={jobData}
@@ -84,12 +78,15 @@ const JobCreationWizard = () => {
       setJobData={setJobData}
       onNext={() => setCurrentStep(currentStep + 1)}
     />,
-    <JobPostConfirmation jobData={jobData} onSubmit={onSubmit} />,
+    <JobPostConfirmation 
+      jobData={jobData} 
+      onSubmit={onSubmit}
+      error={error}
+    />,
   ];
 
   return (
-    <div>
-      {/* Render the current step */}
+    <div className="max-w-4xl mx-auto p-4">
       {steps[currentStep]}
     </div>
   );

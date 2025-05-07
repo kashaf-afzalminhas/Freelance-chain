@@ -6,16 +6,15 @@ const JobDescription = ({ jobData, setJobData, onNext }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
-      <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-lg w-full">
-
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-md w-full max-w-md md:max-w-lg lg:max-w-2xl">
         {/* Progress Indicator */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4 sm:mb-6">
           <div className="flex space-x-2">
-            {[1, 2, 3, 4,5,6,7].map((_, index) => (
+            {[1, 2, 3, 4, 5, 6, 7].map((_, index) => (
               <div
                 key={index}
-                className={`w-3 h-3 rounded-full ${
+                className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
                   index === 1 ? "bg-[#FFBA00]" : "bg-gray-300"
                 }`}
               ></div>
@@ -24,20 +23,22 @@ const JobDescription = ({ jobData, setJobData, onNext }) => {
         </div>
 
         {/* Header */}
-        <h2 className="text-2xl font-bold text-[#0C3B2E] text-center">
-          Start the conversation.
-        </h2>
-        <p className="text-gray-600 mt-2 text-center text-sm md:text-base">
-          Talent are looking for:
-          <br />- Clear expectations about your task or deliverables
-          <br />- The skills required for your work
-          <br />- Good communication
-          <br />- Details about how you or your team like to work.
-        </p>
+        <div className="text-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#0C3B2E] font-butler">
+            Start the conversation.
+          </h2>
+          <ul className="text-gray-600 mt-2 text-sm sm:text-base md:text-lg text-left font-minion list-disc pl-5 space-y-1">
+            <li>Talent are looking for:</li>
+            <li className="ml-4">Clear expectations about your task or deliverables</li>
+            <li className="ml-4">The skills required for your work</li>
+            <li className="ml-4">Good communication</li>
+            <li className="ml-4">Details about how you or your team like to work</li>
+          </ul>
+        </div>
 
         {/* Description Input */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="mt-4 sm:mt-6">
+          <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1 font-minion">
             Describe what you need
           </label>
           <textarea
@@ -46,16 +47,18 @@ const JobDescription = ({ jobData, setJobData, onNext }) => {
             value={jobData.description}
             onChange={handleChange}
             placeholder="Already have a description? Paste it here!"
-            className="w-full px-4 py-3 border rounded-md text-sm placeholder-[#BB8A52] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#6D9773]"
+            className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-md text-sm sm:text-base placeholder-[#BB8A52] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#6D9773] font-minion transition-colors"
           ></textarea>
-          <p className="text-xs text-gray-500 mt-1">30,000 characters max</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1 font-minion">
+            30,000 characters max
+          </p>
         </div>
 
         {/* Navigation Buttons */}
-        <div className="mt-6 flex justify-between">
+        <div className="mt-6 sm:mt-8 flex justify-center">
           <button
             onClick={onNext}
-            className="bg-[#6D9773] text-white py-2 px-6 rounded-lg font-semibold text-lg shadow-md hover:bg-[#5A8663] transition"
+            className="w-full sm:w-auto bg-[#6D9773] hover:bg-[#5A8663] text-white py-2 px-6 rounded-lg font-semibold text-base sm:text-lg shadow-md transition font-butler focus:outline-none focus:ring-2 focus:ring-[#6D9773] focus:ring-opacity-50 active:bg-[#0C3B2E]"
           >
             Next
           </button>

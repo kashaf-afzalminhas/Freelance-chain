@@ -9,6 +9,29 @@ const api = axios.create({
   },
 });
 
+// Users
+export const getAllUsers = () => api.get('/users/all');
+export const getUserById = (id) => api.get(`/users/${id}`);
+export const searchUsers = (query) => api.get(`/users/search/${query}`);
+
+// Conversations
+export const getUserConversations = (userId) => 
+  api.get(`/conversations/${userId}`);
+export const getConversationBetweenUsers = (firstUserId, secondUserId) => 
+  api.get(`/conversations/find/${firstUserId}/${secondUserId}`);
+export const createConversation = (senderId, receiverId) => 
+  api.post('/conversations', { senderId, receiverId });
+export const getConversationById = (id) => 
+  api.get(`/conversations/conversation/${id}`); // New route for getting a conversation by ID
+
+// Messages
+export const getMessagesByConversation = (conversationId) => 
+  api.get(`/messages/${conversationId}`);
+export const sendMessage = (message) => 
+  api.post('/messages', message);
+export const markMessageAsRead = (messageId) => 
+  api.patch(`/messages/${messageId}/read`); // New route for marking a message as read
+
 // Add token to requests if it exists
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -118,6 +141,7 @@ export const projectService = {
     }
   },
 };
+
 export const bidService = {
   submitBid: async (bidData) => {
     try {
@@ -158,13 +182,22 @@ export const bidService = {
   getMyBids: async () => {
     try {
       const response = await api.get('/bids/my-bids');
-      return response.data;
+      return response.data; // Ensure this is an array
     } catch (error) {
       console.error('Get my bids error:', error);
       throw error.response?.data || error.message;
     }
   },
-
+  // Update a bid
+  updateBid: async (bidId, bidData) => {
+    try {
+      const response = await api.put(`/bids/${bidId}`, bidData);
+      return response.data;
+    } catch (error) {
+      console.error('Update bid error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
   // Withdraw a bid
   withdrawBid: async (bidId) => {
     try {
@@ -174,10 +207,16 @@ export const bidService = {
       console.error('Withdraw bid error:', error);
       throw error.response?.data || error.message;
     }
+  },
+  updateBidStatus: async (bidId, statusData) => {
+    try {
+      const response = await api.put(`/bids/${bidId}/status`, statusData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
   }
 };
-// Add this to your existing api.js file, alongside projectService and bidService
-// Add this to your existing api.js file, alongside projectService and bidService
 export const jobService = {
   // Get all jobs
   getJobs: async () => {
@@ -190,16 +229,6 @@ export const jobService = {
   },
 
   // Get jobs posted by current user
-  getMyJobs: async () => {
-    try {
-      const response = await api.get('/jobs/my-jobs');
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  // Create a new job
   createJob: async (jobData) => {
     try {
       const response = await api.post('/jobs', jobData);
@@ -208,7 +237,19 @@ export const jobService = {
       throw error.response?.data || error.message;
     }
   },
-
+  getMyJobs: async () => {
+    try {
+      const response = await api.get('/jobs/my-jobs');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching my jobs:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      throw error.response?.data || error.message;
+    }
+  },
   // Update job status
   updateJobStatus: async (id, status) => {
     try {

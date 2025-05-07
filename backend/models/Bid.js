@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
 
+const bidHistorySchema = new mongoose.Schema({
+  proposal: String,
+  bidAmount: Number,
+  estimatedTime: String,
+  updatedAt: { type: Date, default: Date.now }
+});
+
 const bidSchema = new mongoose.Schema({
   jobId: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -11,7 +18,7 @@ const bidSchema = new mongoose.Schema({
     ref: "User", 
     required: true 
   },
-  freelancerAddress: {  // Add this field for blockchain integration
+  freelancerAddress: {
     type: String,
     required: true,
     match: [/^0x[a-fA-F0-9]{40}$/, "Invalid Ethereum address"]
@@ -40,9 +47,9 @@ const bidSchema = new mongoose.Schema({
     type: Date, 
     default: Date.now 
   },
+  history: [bidHistorySchema] // Track previous versions
 });
 
-// Add index for better query performance
 bidSchema.index({ jobId: 1, freelancerId: 1 }, { unique: true });
 
 module.exports = mongoose.model("Bid", bidSchema);

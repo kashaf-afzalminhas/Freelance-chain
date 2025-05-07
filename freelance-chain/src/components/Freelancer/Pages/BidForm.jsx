@@ -1,24 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useWeb3 } from "../../../context/Web3Context";
 import { bidService } from "../../../services/api";
 import { useNavigate } from "react-router-dom";
 
-const BidForm = ({ jobId }) => {
+const BidForm = ({ jobId, onSubmit }) => {
   const [proposal, setProposal] = useState("");
   const [bidAmount, setBidAmount] = useState("");
   const [estimatedTime, setEstimatedTime] = useState("7 days");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
   const { account } = useWeb3();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!jobId) {
-      setError("Invalid job ID. Please navigate to this page from a valid job listing.");
-      console.error("Invalid jobId:", jobId);
-      navigate('/jobs');
-    }
-  }, [jobId, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,12 +23,12 @@ const BidForm = ({ jobId }) => {
     }
     
     if (!jobId) {
-      setError("Invalid job ID. Cannot submit bid.");
+      setError("Invalid job ID");
       return;
     }
   
     if (proposal.length < 50) {
-      setError("Proposal must be at least 50 characters long");
+      setError("Proposal must be at least 50 characters");
       return;
     }
 
@@ -60,121 +54,114 @@ const BidForm = ({ jobId }) => {
       const result = await bidService.submitBid(bidData);
 
       if (result.success) {
-        alert("Bid submitted successfully!");
+        // Clear form
         setProposal("");
         setBidAmount("");
         setEstimatedTime("7 days");
         setError("");
-        navigate(`/jobs/${jobId}`);
+        setSuccess("Bid submitted successfully!");
+        // Call onSubmit if provided, otherwise navigate
+        if (typeof onSubmit === 'function') {
+          onSubmit();
+        } else {
+          navigate(`/jobs/${jobId}`);
+        }
       } else {
         throw new Error(result.message || "Bid submission failed");
       }
     } catch (err) {
       console.error("Bid submission error:", err);
-      setError(err.message || "Failed to submit bid. Please try again.");
+      setError(err.message || "Failed to submit bid");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden mt-6">
-      <div className="bg-[#0C3B2E] py-4 px-6">
-        <h2 className="text-2xl font-bold text-white">Submit Your Bid</h2>
-      </div>
+    <div className="mt-8 p-8 bg-white rounded-lg shadow-lg border border-gray-100">
+      <h3 className="text-2xl font-bold mb-6 text-secondary">Submit Your Proposal</h3>
       
-      <form onSubmit={handleSubmit} className="p-6">
-        {!jobId && (
-          <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded mb-4">
-            <p className="text-red-700">Error: No job specified. Please navigate to this page from a valid job listing.</p>
-          </div>
-        )}
-
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Proposal Details (minimum 50 characters)</label>
-            <textarea
-              value={proposal}
-              onChange={(e) => setProposal(e.target.value)}
-              required
-              minLength={50}
-              placeholder="Describe how you plan to approach this project..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6D9773] min-h-32"
-            />
-            <p className="text-sm text-gray-500">{proposal.length}/50 characters minimum</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Bid Amount (ETH)</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
-                  required
-                  placeholder="0.001"
-                  step="0.001"
-                  min="0.001"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6D9773]"
-                />
-                <span className="absolute right-3 top-3 text-gray-500">ETH</span>
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+          <p className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            {error}
+          </p>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block mb-2 font-medium text-gray-700">Your Proposal</label>
+          <textarea
+            value={proposal}
+            onChange={(e) => setProposal(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition duration-200"
+            minLength={50}
+            rows={6}
+            placeholder="Describe how you'll approach this project, your relevant experience, and why you're the best candidate for this job..."
+            required
+          />
+          <p className="mt-1 text-sm text-gray-500">{proposal.length} / 50 characters minimum</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block mb-2 font-medium text-gray-700">Bid Amount (ETH)</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition duration-200 pr-12"
+                step="0.001"
+                min="0.001"
+                placeholder="0.000"
+                required
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <span className="text-gray-500">ETH</span>
               </div>
-              <p className="text-sm text-gray-500">Minimum bid: 0.001 ETH</p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Estimated Time</label>
-              <select
-                value={estimatedTime}
-                onChange={(e) => setEstimatedTime(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#6D9773] bg-white"
-              >
-                <option value="7 days">7 days</option>
-                <option value="14 days">14 days</option>
-                <option value="30 days">30 days</option>
-                <option value="custom">Custom timeframe</option>
-              </select>
             </div>
           </div>
-
-          {error && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded">
-              <p className="text-red-700">{error}</p>
-            </div>
-          )}
-
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={!account || isSubmitting || !jobId}
-              className={`w-full md:w-auto px-6 py-3 rounded-md font-medium text-white ${
-                !account || isSubmitting || !jobId
-                  ? "bg-gray-400 cursor-not-allowed" 
-                  : "bg-[#6D9773] hover:bg-[#5c8162] transition-colors duration-200"
-              }`}
+          
+          <div>
+            <label className="block mb-2 font-medium text-gray-700">Estimated Delivery Time</label>
+            <select
+              value={estimatedTime}
+              onChange={(e) => setEstimatedTime(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary transition duration-200 bg-white"
             >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                  </svg>
-                  Submitting...
-                </span>
-              ) : (
-                "Place Bid"
-              )}
-            </button>
+              <option value="7 days">7 days</option>
+              <option value="14 days">14 days</option>
+              <option value="30 days">30 days</option>
+              <option value="Custom">Custom timeline</option>
+            </select>
           </div>
         </div>
+        
+        <div className="pt-4">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full md:w-auto px-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-highlight focus:ring-offset-2 transition duration-200 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Submitting Proposal...
+              </span>
+            ) : (
+              "Submit Proposal"
+            )}
+          </button>
+        </div>
       </form>
-      
-      <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-        <p className="text-sm text-gray-600">
-          By submitting this bid, you agree to complete the work as described if selected.
-        </p>
-      </div>
     </div>
   );
 };
