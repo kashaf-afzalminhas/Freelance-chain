@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { disconnectSocket } from '../../../services/socket';
 
 const Navbar = () => {
   const [findWorkOpen, setFindWorkOpen] = useState(false);
@@ -19,10 +20,18 @@ const Navbar = () => {
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem('token');
+    // Remove all auth-related items
+    localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('userId');
+    
+    // Disconnect socket
+    disconnectSocket();
+    
+    // Navigate to sign in page
     navigate('/signin');
+    
+    // Reload the page to clear all states
     window.location.reload();
   };
 

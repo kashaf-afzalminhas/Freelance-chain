@@ -101,7 +101,9 @@ import CreateJob from "./components/Client/Pages/JobCreationWizard";
 //import ChatPage from './components/Freelancer/Pages/ChatPages';
 import Index from "./components/Client/Pages/Chat";
 //import NotFound from "./components/Client/Pages/NotFound";
-
+import Profile from "./components/Client/Pages/Profile";
+import PublicProfilePage from "./components/Client/Pages/PublicProfilePage";
+import EditProfilePage from "./components/Client/Pages/EditProfilePage";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -146,6 +148,9 @@ const App = () => {
                 /> */}
                 
                 <Route path="/messages" element={<Index />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/public/:userId" element={<PublicProfilePage />} />
+                <Route path="/profile/edit" element={<EditProfilePage/>} />
                 {/* <Route path="*" element={<NotFound />} /> */}
               </Routes>
             </BrowserRouter>
