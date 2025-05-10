@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobService, bidService } from '../../../services/api';
+import { contractService } from '../../../services/ContractService'; // Make sure the filename matches exactly
 
 const MyJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -8,6 +9,7 @@ const MyJobs = () => {
   const [error, setError] = useState(null);
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [bids, setBids] = useState({});
+  const [acceptingBid, setAcceptingBid] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,33 +35,48 @@ const MyJobs = () => {
     }
   };
 
-  const handleAcceptBid = async (bidId, jobId) => {
-    try {
-        // 1. Update bid status
-        await bidService.updateBidStatus(bidId, { status: 'accepted' });
-        
-        // 2. Create contract
-        const bid = bids[jobId].find(b => b._id === bidId);
-        const job = jobs.find(j => j._id === jobId);
-        
-        const contract = await contractService.createContract(
-            jobId,
-            bidId,
-            bid.freelancer?._id || bid.freelancerId?._id,
-            bid.bidAmount,
-            job.title,
-            job.description,
-            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-        );
+// In MyJobs.jsx
+const handleAcceptBid = async (bidId, jobId) => {
+  try {
+    // 1. Verify authentication
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('Please login first');
 
-        // 3. Refresh bids
-        fetchBids(jobId);
-        
-        // 4. Navigate to contract
-        navigate(`/contracts/${contract._id}`);
-    } catch (err) {
-        console.error('Error accepting bid:', err);
-    }
+    // 2. Accept bid
+    await bidService.updateBidStatus(bidId, { status: 'accepted' });
+
+    // 3. Create contract
+    const bid = bids[jobId].find(b => b._id === bidId);
+    const job = jobs.find(j => j._id === jobId);
+    
+    console.log('Creating contract with:', { 
+      jobId, bidId, 
+      freelancerId: bid.freelancer?._id || bid.freelancerId?._id,
+      bidAmount: bid.bidAmount
+    });
+
+    const contract = await contractService.createContract(
+      jobId,
+      bidId,
+      bid.freelancer?._id || bid.freelancerId?._id,
+      bid.bidAmount,
+      job.title,
+      job.description,
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    );
+
+    console.log('Contract created:', contract);
+
+    // 4. Refresh data
+    await fetchContracts();
+    await fetchBids(jobId);
+
+    // 5. Navigate
+    navigate(`/contracts/${contract._id}`);
+  } catch (error) {
+    console.error('Accept bid failed:', error);
+    setError(error.response?.data?.message || error.message);
+  }
 };
 
   const handleRejectBid = async (bidId, jobId) => {

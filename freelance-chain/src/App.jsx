@@ -108,6 +108,9 @@ import MyProposals from "./components/Freelancer/Pages/MyProposals";
 import Layout from './components/Layout'
 import ContractView from "./components/SmartContracts/ContractView";
 import {ContractProvider} from "./context/ContractContext";
+import Profile from "./components/Client/Pages/Profile";
+import PublicProfilePage from "./components/Client/Pages/PublicProfilePage";
+import EditProfilePage from "./components/Client/Pages/EditProfilePage";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -166,6 +169,9 @@ const App = () => {
                 /> */}
                 
                 <Route path="/messages" element={<Index />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/public/:userId" element={<PublicProfilePage />} />
+                <Route path="/profile/edit" element={<EditProfilePage/>} />
                 {/* <Route path="*" element={<NotFound />} /> */}
                 </Route>
               </Routes>

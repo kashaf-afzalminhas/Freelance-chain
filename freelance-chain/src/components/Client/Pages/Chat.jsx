@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../../../AuthContext';
 import RecentChats from '../../../components/RecentChats';
@@ -38,12 +36,12 @@ const useIsMobile = () => {
 };
 
 const ChatPage = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, isLoading, error } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('recent');
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [showChatMobile, setShowChatMobile] = useState(false);
   const { toasts, addToast } = useToast();
   const isMobile = useIsMobile();
@@ -54,17 +52,18 @@ const ChatPage = () => {
 
     const loadUsers = async () => {
       try {
+        setIsLoadingUsers(true);
         const response = await getAllUsers();
         setUsers(response.data);
       } catch (error) {
         console.error('Error loading users:', error);
         addToast({
           title: 'Error',
-          description: 'Failed to load users',
+          description: error.response?.data?.message || 'Failed to load users',
           variant: 'destructive',
         });
       } finally {
-        setIsLoading(false);
+        setIsLoadingUsers(false);
       }
     };
 
@@ -97,10 +96,46 @@ const ChatPage = () => {
     };
   }, [currentUserId, selectedConversation]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen font-body text-primary">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading user data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen font-body text-primary">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <a href="/signin" className="text-primary hover:underline">Please sign in again</a>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentUser) {
     return (
       <div className="flex items-center justify-center h-screen font-body text-primary">
-        Loading...
+        <div className="text-center">
+          <p className="text-red-500 mb-4">You are not authenticated</p>
+          <a href="/signin" className="text-primary hover:underline">Please sign in</a>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoadingUsers) {
+    return (
+      <div className="flex items-center justify-center h-screen font-body text-primary">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading chat data...</p>
+        </div>
       </div>
     );
   }
@@ -133,12 +168,17 @@ const ChatPage = () => {
         return;
       }
 
+      console.log('Current User ID:', currentUserId);
+      console.log('Selected User ID:', user._id);
+
       // Check if a conversation exists between the current user and the selected user
       const response = await getConversationBetweenUsers(currentUserId, user._id);
+      console.log('Conversation response:', response);
 
+      let conversation;
       if (response.data) {
         // If a conversation exists, set it as the selected conversation
-        const conversation = new ConversationWithUser(
+        conversation = new ConversationWithUser(
           response.data._id,
           response.data.members,
           response.data.createdAt,
@@ -147,11 +187,17 @@ const ChatPage = () => {
           response.data.unreadCount,
           user
         );
-        setSelectedConversation(conversation);
       } else {
         // If no conversation exists, create a new one
+        console.log('Creating new conversation...');
         const newConvResponse = await createConversation(currentUserId, user._id);
-        const conversation = new ConversationWithUser(
+        console.log('New conversation response:', newConvResponse);
+        
+        if (!newConvResponse.data) {
+          throw new Error('Failed to create conversation');
+        }
+
+        conversation = new ConversationWithUser(
           newConvResponse.data._id,
           newConvResponse.data.members,
           newConvResponse.data.createdAt,
@@ -160,15 +206,15 @@ const ChatPage = () => {
           newConvResponse.data.unreadCount,
           user
         );
-        setSelectedConversation(conversation);
       }
 
-      if (isMobile) setShowChatMobile(true); // Show chat window on mobile
+      setSelectedConversation(conversation);
+      if (isMobile) setShowChatMobile(true);
     } catch (error) {
       console.error('Error getting/creating conversation:', error);
       addToast({
         title: 'Error',
-        description: 'Failed to start conversation',
+        description: error.response?.data?.message || 'Failed to start conversation. Please try again.',
         variant: 'destructive',
       });
     }

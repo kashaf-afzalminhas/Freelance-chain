@@ -9,7 +9,7 @@ const auth = async (req, res, next) => {
         if (!token) {
             return res.status(401).json({ message: 'No token, authorization denied' });
         }
-        console.log('Token received:', token);
+        console.log('Token receiveddd:', token);
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         console.log('Decoded token:', decoded);

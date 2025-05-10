@@ -78,7 +78,7 @@ const SignIn = () => {
                 const { token, user } = verifyResponse.data;
 
                 // Save token and user data to localStorage
-                localStorage.setItem('token', token);
+                localStorage.setItem('authToken', token);
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('userId', user._id);
 
