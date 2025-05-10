@@ -21,4 +21,8 @@ router.put('/:id/status', auth, jobController.updateJobStatus);
 // Submit a proposal
 router.post('/:id/proposals', auth, jobController.submitProposal);
 
+router.post('/:jobId/save', auth, jobController.saveJob);
+router.post('/:jobId/unsave', auth, jobController.unsaveJob);
+router.get('/saved', auth, jobController.getSavedJobs);
+
 module.exports = router;

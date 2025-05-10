@@ -1,17 +1,17 @@
-const hre = require("hardhat");
-
 async function main() {
-  const FreelancePlatform = await hre.ethers.getContractFactory("FreelancePlatform");
-  const freelancePlatform = await FreelancePlatform.deploy();
+  const [deployer] = await ethers.getSigners();
 
-  await freelancePlatform.deployed();
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  console.log("FreelancePlatform deployed to:", freelancePlatform.address);
+  const JobContract = await ethers.getContractFactory("JobContract");
+  const contract = await JobContract.deploy();
+
+  console.log("JobContract address:", contract.address);
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
-    process.exit(1);
+      console.error(error);
+      process.exit(1);
   });

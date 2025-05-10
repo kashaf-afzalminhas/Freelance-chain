@@ -105,7 +105,9 @@ import BidForm from "./components/Freelancer/Pages/BidForm";
 //import NotFound from "./components/Client/Pages/NotFound";
 import { Web3Provider } from "./context/Web3Context";
 import MyProposals from "./components/Freelancer/Pages/MyProposals";
-
+import Layout from './components/Layout'
+import ContractView from "./components/SmartContracts/ContractView";
+import {ContractProvider} from "./context/ContractContext";
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -115,6 +117,8 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <Tooltip.Provider>
         <AuthProvider>
+
+          <ContractProvider>
         <Web3Provider>
             {/* Notification systems */}
             <HotToaster position="top-right" />
@@ -122,6 +126,7 @@ const App = () => {
 
             <BrowserRouter>
               <Routes>
+              <Route element={<Layout />}>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
@@ -148,6 +153,7 @@ const App = () => {
         <Route path="/my-jobs" element={<MyJobs />} />
         <Route path="/bid-form" element={<BidForm />} />
         <Route path="/myproposals" element={<MyProposals/>} />
+        <Route path="/contracts" element={<ContractView/>} />
 
                 {/* <Route
                   path="/chat"
@@ -161,9 +167,11 @@ const App = () => {
                 
                 <Route path="/messages" element={<Index />} />
                 {/* <Route path="*" element={<NotFound />} /> */}
+                </Route>
               </Routes>
             </BrowserRouter>
             </Web3Provider>
+          </ContractProvider>
         </AuthProvider>
       </Tooltip.Provider>
     </QueryClientProvider>

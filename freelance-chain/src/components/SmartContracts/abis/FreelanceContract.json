@@ -1,0 +1,20 @@
+{
+    "abi": [
+      {
+        "inputs": [
+          {"internalType": "address", "name": "_freelancer", "type": "address"},
+          {"internalType": "struct FreelanceContract.Milestone[]", "name": "_milestones", "type": "tuple[]"},
+          {"internalType": "uint256", "name": "_totalAmount", "type": "uint256"}
+        ],
+        "stateMutability": "payable",
+        "type": "constructor"
+      },
+      {
+        "inputs": [],
+        "name": "fundContract",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+      }
+    ]
+  }

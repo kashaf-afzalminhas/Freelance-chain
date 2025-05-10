@@ -35,12 +35,32 @@ const MyJobs = () => {
 
   const handleAcceptBid = async (bidId, jobId) => {
     try {
-      await bidService.updateBidStatus(bidId, { status: 'accepted' });
-      fetchBids(jobId); // Refresh bids
+        // 1. Update bid status
+        await bidService.updateBidStatus(bidId, { status: 'accepted' });
+        
+        // 2. Create contract
+        const bid = bids[jobId].find(b => b._id === bidId);
+        const job = jobs.find(j => j._id === jobId);
+        
+        const contract = await contractService.createContract(
+            jobId,
+            bidId,
+            bid.freelancer?._id || bid.freelancerId?._id,
+            bid.bidAmount,
+            job.title,
+            job.description,
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+        );
+
+        // 3. Refresh bids
+        fetchBids(jobId);
+        
+        // 4. Navigate to contract
+        navigate(`/contracts/${contract._id}`);
     } catch (err) {
-      console.error('Error accepting bid:', err);
+        console.error('Error accepting bid:', err);
     }
-  };
+};
 
   const handleRejectBid = async (bidId, jobId) => {
     try {

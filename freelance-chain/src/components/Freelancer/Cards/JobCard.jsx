@@ -27,7 +27,7 @@ export default function JobCard({
           <p className="text-gray-600 mb-2 flex items-center">
             <Briefcase className="w-4 h-4 mr-2" />
             {company}
-            <p className='flex items-center text-green-600 font-semibold'>  <DollarSign className="w-4 h-4 ml-1" />
+            <p className='flex items-center text-green-600 font-semibold'> <span>ETH</span>
             {budget}</p>
           </p>
         </div>

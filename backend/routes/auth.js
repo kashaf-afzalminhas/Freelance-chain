@@ -5,10 +5,10 @@ const Client = require('../models/Client');
 const Freelancer = require('../models/Freelancer');
 const auth = require('../middleware/auth');
 const crypto = require('crypto');
-const Web3 = require('web3');
+const web3 = require('web3');
 const router = express.Router();
-// Initialize Web3 with Infura provider (or any public Ethereum node)
-const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID');
+// // Initialize Web3 with Infura provider (or any public Ethereum node)
+// const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID');
 // Generate a random nonce
 const generateNonce = () => crypto.randomBytes(16).toString('hex');
 

@@ -106,3 +106,47 @@ exports.getMyJobs = async (req, res) => {
     });
   }
 };
+
+// controllers/jobController.js
+
+// Save a job
+exports.saveJob = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const jobId = req.params.jobId;
+
+    if (!user.savedJobs.includes(jobId)) {
+      user.savedJobs.push(jobId);
+      await user.save();
+    }
+
+    res.json({ message: 'Job saved successfully', savedJobs: user.savedJobs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Unsave a job
+exports.unsaveJob = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const jobId = req.params.jobId;
+
+    user.savedJobs = user.savedJobs.filter(id => id.toString() !== jobId);
+    await user.save();
+
+    res.json({ message: 'Job removed from saved', savedJobs: user.savedJobs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get saved jobs
+exports.getSavedJobs = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('savedJobs');
+    res.json(user.savedJobs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

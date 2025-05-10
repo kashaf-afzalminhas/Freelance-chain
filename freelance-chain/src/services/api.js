@@ -227,7 +227,8 @@ export const jobService = {
       throw error.response?.data || error.message;
     }
   },
-
+  saveJob: async (id) => api.post(`/jobs/${id}/save`),
+  unsaveJob: async (id) => api.post(`/jobs/${id}/unsave`),
   // Get jobs posted by current user
   createJob: async (jobData) => {
     try {

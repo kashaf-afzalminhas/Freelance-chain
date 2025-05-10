@@ -11,14 +11,15 @@ const BidForm = ({ jobId, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const { account } = useWeb3();
+  const { account, connectWallet } = useWeb3();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!account) {
-      setError("Please connect your wallet first");
+      connectWallet();
+      // setError("Please connect your wallet first");
       return;
     }
     
@@ -33,6 +34,7 @@ const BidForm = ({ jobId, onSubmit }) => {
     }
 
     setIsSubmitting(true);
+    setError("");
 
     try {
       const numericBidAmount = parseFloat(bidAmount);
@@ -54,18 +56,22 @@ const BidForm = ({ jobId, onSubmit }) => {
       const result = await bidService.submitBid(bidData);
 
       if (result.success) {
+        // Show success message
+        setSuccess(true);
+        
         // Clear form
         setProposal("");
         setBidAmount("");
         setEstimatedTime("7 days");
-        setError("");
-        setSuccess("Bid submitted successfully!");
-        // Call onSubmit if provided, otherwise navigate
-        if (typeof onSubmit === 'function') {
-          onSubmit();
-        } else {
-          navigate(`/jobs/${jobId}`);
-        }
+        
+        // Call onSubmit if provided, otherwise navigate after 3 seconds
+        setTimeout(() => {
+          if (typeof onSubmit === 'function') {
+            onSubmit();
+          } else {
+            navigate(`/jobs/${jobId}`);
+          }
+        }, 3000);
       } else {
         throw new Error(result.message || "Bid submission failed");
       }
@@ -92,7 +98,18 @@ const BidForm = ({ jobId, onSubmit }) => {
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {success && (
+        <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
+          <p className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Proposal submitted successfully!
+          </p>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className={`space-y-6 ${success ? 'opacity-50 pointer-events-none' : ''}`}>
         <div>
           <label className="block mb-2 font-medium text-gray-700">Your Proposal</label>
           <textarea
@@ -145,8 +162,8 @@ const BidForm = ({ jobId, onSubmit }) => {
         <div className="pt-4">
           <button
             type="submit"
-            disabled={isSubmitting}
-            className={`w-full md:w-auto px-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-highlight focus:ring-offset-2 transition duration-200 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+            disabled={isSubmitting || success}
+            className={`w-full md:w-auto px-6 py-3 bg-primary text-white rounded-md font-medium hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-highlight focus:ring-offset-2 transition duration-200 ${(isSubmitting || success) ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center">

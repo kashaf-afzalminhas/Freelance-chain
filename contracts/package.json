@@ -1,6 +1,10 @@
 {
   "dependencies": {
-    "@openzeppelin/contracts": "^5.3.0"
+    "@openzeppelin/contracts": "^5.3.0",
+    "@truffle/hdwallet-provider": "^2.1.15",
+    "dotenv": "^16.5.0",
+    "mongoose": "^8.14.1",
+    "web3": "^4.16.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
@@ -12,11 +16,11 @@
     "hardhat-deploy": "^1.0.2",
     "hardhat-gas-reporter": "^2.2.3",
     "truffle": "^5.11.5"
+  },
+  "scripts": {
+    "test": "truffle test",
+    "compile": "truffle compile",
+    "migrate": "truffle migrate",
+    "migrate:sepolia": "truffle migrate --network sepolia"
   }
-}
-"scripts": {
-  "test": "truffle test",
-  "compile": "truffle compile",
-  "migrate": "truffle migrate",
-  "migrate:sepolia": "truffle migrate --network sepolia"
 }
