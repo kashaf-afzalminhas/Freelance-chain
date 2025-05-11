@@ -1,7 +1,16 @@
 import React from 'react';
 
-const SkillsList = ({ skills = [], ratings = [] }) => {
+const SkillsList = ({ skills = [], ratings = [], loading = false }) => {
   const hasRatings = ratings.length > 0;
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    );
+  }
 
   if (!skills.length && !ratings.length) {
     return (

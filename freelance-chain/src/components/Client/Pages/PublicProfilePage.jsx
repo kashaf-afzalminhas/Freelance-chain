@@ -24,7 +24,21 @@ const PublicProfilePage = () => {
       setLoading(true);
       setError(null);
       const response = await getPublicUserProfile(id);
-      setProfile(response.data);
+      
+      // Ensure role-specific data is properly structured
+      const profileData = {
+        ...response.data,
+        skills: response.data.skills || [],
+        experience: response.data.experience || '',
+        company: response.data.company || '',
+        portfolioLinks: {
+          linkedin: response.data.portfolioLinks?.linkedin || null,
+          github: response.data.portfolioLinks?.github || null,
+          personalPortfolio: response.data.portfolioLinks?.personalPortfolio || null
+        }
+      };
+      
+      setProfile(profileData);
     } catch (err) {
       console.error('Failed to fetch public profile:', err);
       setError('Failed to load profile. This user may not exist or the profile is private.');
@@ -93,12 +107,21 @@ const PublicProfilePage = () => {
                   </p>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">Skills</h3>
-                  <div className="mt-2">
-                    <SkillsList skills={profile.skills} ratings={profile.ratings} />
+                {profile.role === 'freelancer' && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Skills</h3>
+                    <div className="mt-2">
+                      <SkillsList skills={profile.skills} />
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {profile.role === 'client' && profile.company && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Company</h3>
+                    <p className="mt-1 text-gray-600">{profile.company}</p>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">Portfolio Links</h3>

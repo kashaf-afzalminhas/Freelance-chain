@@ -85,27 +85,38 @@ export const markMessageAsRead = (messageId) =>
 
 
 const BASE_URL = 'http://localhost:5000';
-const authHeaders = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
 
-// Helper function to get token
-const getToken = () => localStorage.getItem('authToken');
+// Update the authHeaders function
+const authHeaders = () => {
+  const token = localStorage.getItem('authToken');
+  return {
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  };
+};
 
+// Update the profile-related API calls to match backend routes
 export const getUserProfile = () => 
-  axios.get(`${BASE_URL}/profile`, authHeaders(getToken()));
+  axios.get(`${BASE_URL}/profile`, authHeaders()); // Remove /api
 
-export const updateUserProfile = (data) => 
-  axios.put(`${BASE_URL}/profile`, data, authHeaders(getToken()));
+export const updateUserProfile = (data) => {
+  console.log('Updating profile with data:', data);
+  return axios.put(`${BASE_URL}/profile`, data, authHeaders()); // Remove /api and /update
+};
 
 export const uploadProfileImage = (file) => {
   const formData = new FormData();
   formData.append('profileImage', file);
-  return axios.post(`${BASE_URL}/profile/image`, formData, authHeaders(getToken()));
+  return axios.post(`${BASE_URL}/profile/upload`, formData, { // Update to match backend route
+    ...authHeaders(),
+    'Content-Type': 'multipart/form-data'
+  });
 };
 
 export const getPublicUserProfile = (userId) => 
-  axios.get(`${BASE_URL}/profile/public/${userId}`);
+  axios.get(`${BASE_URL}/profile/public/${userId}`, authHeaders()); // Remove /api
 
 //projects 
 export const projectService = {
