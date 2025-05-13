@@ -98,25 +98,33 @@ const authHeaders = () => {
 };
 
 // Update the profile-related API calls to match backend routes
-export const getUserProfile = () => 
-  axios.get(`${BASE_URL}/profile`, authHeaders()); // Remove /api
+export const getUserProfile = () => api.get('/profile');
 
 export const updateUserProfile = (data) => {
   console.log('Updating profile with data:', data);
-  return axios.put(`${BASE_URL}/profile`, data, authHeaders()); // Remove /api and /update
+  return api.put('/profile', data);
 };
 
 export const uploadProfileImage = (file) => {
   const formData = new FormData();
   formData.append('profileImage', file);
-  return axios.post(`${BASE_URL}/profile/upload`, formData, { // Update to match backend route
-    ...authHeaders(),
-    'Content-Type': 'multipart/form-data'
+  return api.post('/profile/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }).then(response => {
+    // Ensure we return the image URL in the expected format
+    return {
+      data: {
+        profileImage: response.data.data.profileImage
+      }
+    };
   });
 };
 
-export const getPublicUserProfile = (userId) => 
-  axios.get(`${BASE_URL}/profile/public/${userId}`, authHeaders()); // Remove /api
+export const removeProfileImage = () => api.delete('/profile/image');
+
+export const getPublicUserProfile = (userId) => api.get(`/profile/public/${userId}`);
 
 //projects 
 export const projectService = {

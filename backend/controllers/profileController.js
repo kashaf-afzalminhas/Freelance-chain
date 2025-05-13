@@ -1,36 +1,28 @@
 const User = require('../models/User');
-const { body, validationResult } = require('express-validator');
 const Freelancer = require('../models/Freelancer');
 const Client = require('../models/Client');
-const z = require('zod');
+const { body, validationResult } = require('express-validator');
 
 // Validation middleware
 const validateProfileUpdate = [
-  body('name').optional().isString().trim(),
-  body('portfolioLinks.linkedin').optional().isURL().withMessage('LinkedIn URL must be valid'),
-  body('portfolioLinks.github').optional().isURL().withMessage('GitHub URL must be valid'),
-  body('portfolioLinks.personalPortfolio').optional().isURL().withMessage('Personal Portfolio URL must be valid'),
-  body('bio').optional().isString().trim(),
+  body('name').optional().isString().trim().isLength({ min: 2, max: 50 }),
+  body('bio').optional().isString().trim().isLength({ max: 500 }),
+  body('portfolioLinks.linkedin').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(value);
+  }).withMessage('Invalid LinkedIn URL'),
+  body('portfolioLinks.github').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(value);
+  }).withMessage('Invalid GitHub URL'),
+  body('portfolioLinks.personalPortfolio').optional().custom((value) => {
+    if (value === '' || value === null || value === undefined) return true;
+    return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(value);
+  }).withMessage('Invalid portfolio URL'),
   body('skills').optional().isArray(),
   body('experience').optional().isString().trim(),
   body('company').optional().isString().trim()
 ];
-
-const profileSchema = z.object({
-    name: z.string()
-        .min(2, "Name must be at least 2 characters")
-        .max(50, "Name cannot exceed 50 characters"),
-    bio: z.string()
-        .max(500, "Bio cannot exceed 500 characters")
-        .optional()
-        .nullable(),
-    portfolioLinks: z.array(z.string().url()),
-    skills: z.array(z.string()),
-    skillRatings: z.array(z.object({
-        skill: z.string(),
-        rating: z.number().min(0).max(5)
-    }))
-});
 
 exports.getUserProfile = async (req, res) => {
   try {
@@ -47,35 +39,52 @@ exports.getUserProfile = async (req, res) => {
       const freelancer = await Freelancer.findOne({ userId: user._id });
       roleData = { 
         skills: freelancer?.skills || [], 
-        experience: freelancer?.experience 
+        experience: freelancer?.experience || ''
       };
     } else if (user.role === 'client') {
       const client = await Client.findOne({ userId: user._id });
       roleData = { 
-        company: client?.company 
+        company: client?.company || ''
       };
     }
 
-    res.json({ ...user.toObject(), ...roleData });
+    res.json({ 
+      success: true,
+      data: { ...user.toObject(), ...roleData }
+    });
   } catch (err) {
     console.error('Error in getUserProfile:', err);
-    res.status(500).json({ message: "Failed to fetch user profile" });
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch user profile",
+      error: err.message 
+    });
   }
 };
 
 exports.updateUserProfile = async (req, res) => {
+  console.log('Request received to update profile:', req.body); // Debugging
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(400).json({ 
+      success: false,
+      errors: errors.array() 
+    });
   }
 
   try {
     const userId = req.user.id;
     const updates = req.body;
-    const user = await User.findById(userId);
 
+    // Ensure portfolioLinks is always an object
+    updates.portfolioLinks = updates.portfolioLinks || { linkedin: '', github: '', personalPortfolio: '' };
+
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
     }
 
     // Update basic user profile
@@ -124,30 +133,59 @@ exports.updateUserProfile = async (req, res) => {
       };
     }
 
-    res.json({ ...updatedUser.toObject(), ...roleData });
+    console.log('Profile updated successfully:', { ...updatedUser.toObject(), ...roleData });
+
+    res.json({ 
+      success: true,
+      data: { ...updatedUser.toObject(), ...roleData }
+    });
   } catch (err) {
     console.error('Error in updateUserProfile:', err);
-    res.status(500).json({ message: "Failed to update user profile" });
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to update user profile",
+      error: err.message 
+    });
   }
 };
 
 exports.uploadProfileImage = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
+      return res.status(400).json({ 
+        success: false,
+        message: "No file uploaded" 
+      });
     }
 
     const userId = req.user.id;
     const filePath = `/uploads/profile-images/${req.file.filename}`;
 
-    const user = await User.findByIdAndUpdate(userId, { profileImage: filePath }, { new: true }).select("-password");
+    const user = await User.findByIdAndUpdate(
+      userId, 
+      { profileImage: filePath }, 
+      { new: true }
+    ).select("-password");
+
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
     }
 
-    res.json({ message: "Profile image uploaded successfully", profileImage: filePath });
+    res.json({ 
+      success: true,
+      message: "Profile image uploaded successfully", 
+      data: { profileImage: filePath }
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message || "Failed to upload profile image" });
+    console.error('Error in uploadProfileImage:', err);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to upload profile image",
+      error: err.message 
+    });
   }
 };
 
@@ -157,7 +195,10 @@ exports.getUserPublicProfile = async (req, res) => {
     const user = await User.findById(userId).select("name portfolioLinks profileImage ratings bio role");
     
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
     }
 
     // Fetch role-specific data
@@ -166,18 +207,26 @@ exports.getUserPublicProfile = async (req, res) => {
       const freelancer = await Freelancer.findOne({ userId: user._id });
       roleData = { 
         skills: freelancer?.skills || [], 
-        experience: freelancer?.experience 
+        experience: freelancer?.experience || ''
       };
     } else if (user.role === 'client') {
       const client = await Client.findOne({ userId: user._id });
       roleData = { 
-        company: client?.company 
+        company: client?.company || ''
       };
     }
 
-    res.json({ ...user.toObject(), ...roleData });
+    res.json({ 
+      success: true,
+      data: { ...user.toObject(), ...roleData }
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch public profile" });
+    console.error('Error in getUserPublicProfile:', err);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch public profile",
+      error: err.message 
+    });
   }
 };
 
@@ -232,12 +281,73 @@ exports.updateSkillRatings = async (req, res) => {
     }
 };
 
+exports.removeProfileImage = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { profileImage: null },
+      { new: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Profile image removed successfully",
+      data: { profileImage: null }
+    });
+  } catch (err) {
+    console.error('Error in removeProfileImage:', err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to remove profile image",
+      error: err.message
+    });
+  }
+};
+
 // Export validation middleware
 exports.validateProfileUpdate = validateProfileUpdate;
 
-// console.log({
-//   getUserProfile: exports.getUserProfile,
-//   updateUserProfile: exports.updateUserProfile,
-//   uploadProfileImage: exports.uploadProfileImage,
-//   getUserPublicProfile: exports.getUserPublicProfile,
-// });
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log('Form submitted'); // Debugging
+
+  if (!validateForm()) return;
+
+  try {
+    setSubmitting(true);
+    console.log('Submitting form data:', formData);
+
+    const response = await updateUserProfile(formData);
+    console.log('Update response:', response);
+
+    if (response.data.success) {
+      toast.success('Profile updated successfully!');
+      navigate('/profile');
+    } else {
+      toast.error(response.data.message || 'Failed to update profile');
+    }
+  } catch (err) {
+    console.error('Failed to update profile:', err);
+
+    if (err.response?.data?.errors) {
+      const newErrors = {};
+      err.response.data.errors.forEach(error => {
+        newErrors[error.path] = error.msg;
+      });
+      setErrors(newErrors);
+    } else {
+      toast.error(err.response?.data?.message || 'Failed to update profile');
+    }
+  } finally {
+    setSubmitting(false);
+  }
+};
