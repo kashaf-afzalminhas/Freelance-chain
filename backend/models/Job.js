@@ -60,6 +60,11 @@ const jobSchema = new mongoose.Schema({
   location: {
     type: String,
     required: false
+  },
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   }
 });
 

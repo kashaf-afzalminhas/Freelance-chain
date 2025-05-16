@@ -12,7 +12,11 @@ const UserSchema = new mongoose.Schema({
         personalPortfolio: { type: String }
     },
     profileImage: { type: String }, // URL or IPFS hash for profile image
-    ratings: { type: Number, default: 0 }, // General ratings field
+    ratings: { type: Number, default: 0 }, 
+    savedJobs: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Job'
+      }]// General ratings field
 });
 
 module.exports = mongoose.model('User', UserSchema);

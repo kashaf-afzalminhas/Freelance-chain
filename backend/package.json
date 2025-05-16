@@ -4,11 +4,17 @@
   "private": true,
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "test": "jest",
+    "lint": "eslint .",
+    "migrate": "cd ../contracts/contracts && truffle migrate --reset --network development",
+    "ganache": "ganache-cli -p 7545 -h 0.0.0.0 -d"
   },
   "dependencies": {
     "@ethersproject/wallet": "^5.8.0",
+    "@openzeppelin/contracts": "^5.0.1",
     "@tanstack/react-query": "^5.67.1",
+    "@truffle/contract": "^4.6.31",
     "@truffle/hdwallet-provider": "^2.1.15",
     "axios": "^1.8.1",
     "bcryptjs": "^3.0.2",
@@ -16,12 +22,12 @@
     "cors": "^2.8.5",
     "debug": "~2.6.9",
     "dotenv": "^16.5.0",
-    "ethers": "^6.13.5",
+    "ethers": "^5.8.0",
     "express": "~4.16.1",
     "express-session": "^1.18.1",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.14.0",
+    "mongoose": "^8.14.1",
     "morgan": "~1.9.1",
     "multer": "^1.4.5-lts.2",
     "nodemailer": "^6.10.0",
@@ -32,9 +38,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
-    "chai": "^5.2.0",
     "chai-http": "^5.1.1",
-    "hardhat": "^2.22.19",
     "mocha": "^11.1.0",
     "nodemon": "^3.1.9"
   }
