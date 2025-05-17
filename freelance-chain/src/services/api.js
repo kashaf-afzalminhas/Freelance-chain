@@ -10,7 +10,7 @@ export const api = axios.create({  // Export the api object as a named export
 
 // Add token to requests if it exists
 api.interceptors.request.use((config) => {
-const token = localStorage.getItem('token');
+  const token = localStorage.getItem('authToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -215,7 +215,7 @@ export const bidService = {
       console.log('Submitting bid with data:', JSON.stringify(bidData, null, 2));
       
       // Log the current token
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       console.log('Current auth token:', token);
 
       const response = await api.post('/bids/submit', bidData);
@@ -255,12 +255,11 @@ export const bidService = {
     }
   },
   // Update a bid
-  updateBid: async (bidId, bidData) => {
+  updateBidStatus: async (bidId, statusData) => {
     try {
-      const response = await api.put(`/bids/${bidId}`, bidData);
+      const response = await api.put(`/bids/${bidId}/status`, statusData);
       return response.data;
     } catch (error) {
-      console.error('Update bid error:', error);
       throw error.response?.data || error.message;
     }
   },
@@ -337,4 +336,8 @@ export const jobService = {
     }
   }
 };
+// Saved Jobs
+export const saveJob = (jobId) => api.post('/saved-jobs', { jobId });
+export const getSavedJobs = () => api.get('/saved-jobs');
+export const unsaveJob = (jobId) => api.delete(`/saved-jobs/${jobId}`);
 

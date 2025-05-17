@@ -38,23 +38,15 @@ const MyJobs = () => {
 // In MyJobs.jsx
 const handleAcceptBid = async (bidId, jobId) => {
   try {
-    // 1. Verify authentication
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('Please login first');
-
-    // 2. Accept bid
+    setAcceptingBid(true);
+    
+    // 1. Accept bid
     await bidService.updateBidStatus(bidId, { status: 'accepted' });
 
-    // 3. Create contract
+    // 2. Create contract
     const bid = bids[jobId].find(b => b._id === bidId);
     const job = jobs.find(j => j._id === jobId);
     
-    console.log('Creating contract with:', { 
-      jobId, bidId, 
-      freelancerId: bid.freelancer?._id || bid.freelancerId?._id,
-      bidAmount: bid.bidAmount
-    });
-
     const contract = await contractService.createContract(
       jobId,
       bidId,
@@ -65,20 +57,19 @@ const handleAcceptBid = async (bidId, jobId) => {
       new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     );
 
-    console.log('Contract created:', contract);
-
-    // 4. Refresh data
+    // 3. Refresh data
     await fetchContracts();
     await fetchBids(jobId);
 
-    // 5. Navigate
+    // 4. Navigate
     navigate(`/contracts/${contract._id}`);
   } catch (error) {
     console.error('Accept bid failed:', error);
     setError(error.response?.data?.message || error.message);
+  } finally {
+    setAcceptingBid(false);
   }
 };
-
   const handleRejectBid = async (bidId, jobId) => {
     try {
       await bidService.updateBidStatus(bidId, { status: 'rejected' });

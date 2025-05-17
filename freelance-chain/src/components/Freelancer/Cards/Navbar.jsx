@@ -26,6 +26,7 @@ const Navbar = () => {
     setFindWorkOpen(false);
     setDeliverProjectsOpen(false);
   };
+
   const handleSignOut = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -33,6 +34,115 @@ const Navbar = () => {
     navigate('/signin');
     window.location.reload();
   };
+
+  const renderClientNav = () => (
+    <>
+      <Link
+        to="/create-job"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        Create Job
+      </Link>
+      <Link
+        to="/my-jobs"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        My Jobs
+      </Link>
+      <Link
+        to="/contracts"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        My Contracts
+      </Link>
+    </>
+  );
+
+  const renderFreelancerNav = () => (
+    <>
+      <div className="relative">
+        <button
+          onClick={toggleFindWork}
+          className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+        >
+          Find Work
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-4 w-4 ml-1 transition-transform ${findWorkOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {findWorkOpen && (
+          <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10 border border-gray-100">
+            <Link
+              to="/jobs"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
+            >
+              Browse Jobs
+            </Link>
+            <Link
+              to="/browse-projects"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
+            >
+              Browse Projects
+            </Link>
+            <Link
+              to="/saved-jobs"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
+            >
+              Saved Jobs
+            </Link>
+          </div>
+        )}
+      </div>
+
+      <div className="relative">
+        <button
+          onClick={toggleDeliverProjects}
+          className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+        >
+          Deliver Projects
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-4 w-4 ml-1 transition-transform ${deliverProjectsOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {deliverProjectsOpen && (
+          <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10 border border-gray-100">
+            <Link
+              to="/my-projects"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
+            >
+              My Projects
+            </Link>
+            <Link
+              to="/contracts"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
+            >
+              My Contracts
+            </Link>
+            <Link
+              to="/myproposals"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
+            >
+              My Proposals
+            </Link>
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <nav className="bg-white shadow-md">
@@ -56,128 +166,21 @@ const Navbar = () => {
                 Home
               </Link>
               
-              {/* Find Work Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={toggleFindWork}
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Find Work
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-4 w-4 ml-1 transition-transform ${findWorkOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {findWorkOpen && (
-                  <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10 border border-gray-100">
-                    <Link
-                      to="/jobs"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                    >
-                      Browse Jobs
-                    </Link>
-                    <Link
-                      to="/browse-projects"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                    >
-                      Browse Projects
-                    </Link>
-                    <Link
-                      to="my-jobs"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                    >
-                      My Jobs
-                    </Link>
-                    <Link
-                      to="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                    >
-                      Saved Jobs
-                    </Link>
-                  </div>
-                )}
-              </div>
+              {/* Role-specific navigation */}
+              {user && user.role === 'client' ? renderClientNav() : renderFreelancerNav()}
 
-              {user && user.role !== 'client' && (
-                <>
-                  {/* Deliver Projects Dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={toggleDeliverProjects}
-                      className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                    >
-                      Deliver Projects
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className={`h-4 w-4 ml-1 transition-transform ${deliverProjectsOpen ? "rotate-180" : ""}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-
-                    {deliverProjectsOpen && (
-                      <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 z-10 border border-gray-100">
-                        <Link
-                          to="/my-projects"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                        >
-                          My Projects
-                        </Link>
-                        <Link
-                          to="/contracts"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                        >
-                          Contracts
-                        </Link>
-                        <Link
-                          to="/myproposals"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#f0f7f1] hover:text-[#0C3B2E]"
-                        >
-                          My Proposals
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* My Projects Link */}
-                  <Link
-                    to="/my-projects"
-                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                  >
-                    My Projects
-                  </Link>
-                </>
-              )}
-
-              {/* Other Links */}
+              {/* Common Links */}
               <Link
                 to="/messages"
                 className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
               >
                 Messages
               </Link>
-
-              {user && user.role !== 'freelancer' && (
-                <Link
-                  to="/create-job"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Create Job
-                </Link>
-              )}
             </div>
           </div>
-  {/* Auth Section - Desktop */}
-  <div className="hidden sm:ml-6 sm:flex sm:items-center">
+
+          {/* Auth Section - Desktop */}
+          <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {user ? (
               <div className="relative">
                 <button 
@@ -232,7 +235,6 @@ const Navbar = () => {
             )}
           </div>
 
-
           {/* Mobile Menu Button */}
           <div className="-mr-2 flex items-center sm:hidden">
             <button
@@ -273,108 +275,122 @@ const Navbar = () => {
               Home
             </Link>
             
-            {/* Find Work Mobile Dropdown */}
-            <div className="px-4 py-2">
-              <button
-                onClick={toggleFindWork}
-                className="w-full text-left text-gray-500 hover:text-gray-700 text-base font-medium flex justify-between items-center"
-              >
-                Find Work
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-4 w-4 ml-1 transition-transform ${findWorkOpen ? "rotate-180" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            {/* Role-specific mobile navigation */}
+            {user && user.role === 'client' ? (
+              <>
+                <Link
+                  to="/create-job"
+                  className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {findWorkOpen && (
-                <div className="pl-4 mt-2 space-y-2">
-                  <Link
-                    to="/jobs"
-                    className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
-                  >
-                    Browse Jobs
-                  </Link>
-                  <Link
-                    to="/browse-projects"
-                    className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
-                  >
-                    Browse Projects
-                  </Link>
-                  <Link
-                    to="my-jobs"
-                    className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
-                  >
-                    My Jobs
-                  </Link>
-                  <Link
-                    to="#"
-                    className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
-                  >
-                    Saved Jobs
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            {/* Deliver Projects Mobile Dropdown */}
-            <div className="px-4 py-2">
-              <button
-                onClick={toggleDeliverProjects}
-                className="w-full text-left text-gray-500 hover:text-gray-700 text-base font-medium flex justify-between items-center"
-              >
-                Deliver Projects
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-4 w-4 ml-1 transition-transform ${deliverProjectsOpen ? "rotate-180" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  Create Job
+                </Link>
+                <Link
+                  to="/my-jobs"
+                  className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {deliverProjectsOpen && (
-                <div className="pl-4 mt-2 space-y-2">
-                  <Link
-                    to="/my-projects"
-                    className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                  My Jobs
+                </Link>
+                <Link
+                  to="/contracts"
+                  className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
+                >
+                  My Contracts
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* Find Work Mobile Dropdown */}
+                <div className="px-4 py-2">
+                  <button
+                    onClick={toggleFindWork}
+                    className="w-full text-left text-gray-500 hover:text-gray-700 text-base font-medium flex justify-between items-center"
                   >
-                    My Projects
-                  </Link>
-                  <Link
-                    to="/createproject"
-                    className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
-                  >
-                    Create Project
-                  </Link>
+                    Find Work
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-4 w-4 ml-1 transition-transform ${findWorkOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {findWorkOpen && (
+                    <div className="pl-4 mt-2 space-y-2">
+                      <Link
+                        to="/jobs"
+                        className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                      >
+                        Browse Jobs
+                      </Link>
+                      <Link
+                        to="/browse-projects"
+                        className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                      >
+                        Browse Projects
+                      </Link>
+                      <Link
+                        to="/saved-jobs"
+                        className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                      >
+                        Saved Jobs
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Other Mobile Links */}
-            <Link
-              to="/my-projects"
-              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
-            >
-              My Projects
-            </Link>
+                {/* Deliver Projects Mobile Dropdown */}
+                <div className="px-4 py-2">
+                  <button
+                    onClick={toggleDeliverProjects}
+                    className="w-full text-left text-gray-500 hover:text-gray-700 text-base font-medium flex justify-between items-center"
+                  >
+                    Deliver Projects
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-4 w-4 ml-1 transition-transform ${deliverProjectsOpen ? "rotate-180" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {deliverProjectsOpen && (
+                    <div className="pl-4 mt-2 space-y-2">
+                      <Link
+                        to="/my-projects"
+                        className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                      >
+                        My Projects
+                      </Link>
+                      <Link
+                        to="/contracts"
+                        className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                      >
+                        My Contracts
+                      </Link>
+                      <Link
+                        to="/myproposals"
+                        className="block py-2 text-sm text-gray-500 hover:text-[#0C3B2E]"
+                      >
+                        My Proposals
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Common Mobile Links */}
             <Link
               to="/messages"
               className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
             >
               Messages
-            </Link>
-            <Link
-              to="/create-job"
-              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
-            >
-              Create Job
             </Link>
 
             {/* Mobile Auth Section */}

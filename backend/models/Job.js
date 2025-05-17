@@ -31,16 +31,16 @@ const jobSchema = new mongoose.Schema({
     enum: ['open', 'in_progress', 'completed'],
     default: 'open'
   },
+freelancer: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: 'User'
+},
+proposals: [{
   freelancer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    default: null
+    required: true
   },
-  proposals: [{
-    freelancer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
     proposal: String,
     bid: Number,
     status: {

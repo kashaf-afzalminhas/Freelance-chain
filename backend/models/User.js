@@ -12,7 +12,11 @@ const UserSchema = new mongoose.Schema({
     savedJobs: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job'
-      }]// General ratings field
+      }],
+      averageRating: {
+  type: Number,
+  default: 0
+}// General ratings field
 });
 
 module.exports = mongoose.model('User', UserSchema);

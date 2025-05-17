@@ -150,3 +150,44 @@ exports.getSavedJobs = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// Add to jobController.js
+exports.acceptBidAndCreateContract = async (req, res) => {
+  try {
+    const { jobId, bidId } = req.params;
+    
+    // 1. Update bid status
+    const job = await Job.findById(jobId);
+    const bidIndex = job.proposals.findIndex(p => p._id.toString() === bidId);
+    if (bidIndex === -1) throw new Error('Bid not found');
+    
+    job.proposals[bidIndex].status = 'accepted';
+    job.freelancer = job.proposals[bidIndex].freelancer;
+    job.status = 'in_progress';
+    
+    // 2. Create contract
+    const contract = new Contract({
+      job: jobId,
+      bid: bidId,
+      client: job.clientId,
+      freelancer: job.freelancer,
+      bidAmount: job.proposals[bidIndex].bid,
+      jobTitle: job.title,
+      jobDescription: job.description,
+      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    });
+    
+    await Promise.all([job.save(), contract.save()]);
+    
+    res.json({
+      success: true,
+      contract,
+      job
+    });
+  } catch (error) {
+    console.error('Error accepting bid:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};

@@ -14,7 +14,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Initialize Web3 with Ganache
-const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:7545';
+const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:8545';
 const web3 = new Web3(new Web3.providers.HttpProvider(ganacheUrl));
 
 // Middleware
@@ -29,6 +29,12 @@ app.use(cors({
 // Make Web3 available to routes
 app.use((req, res, next) => {
     req.web3 = web3;
+    next();
+});
+
+// Request logging middleware for debugging
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
@@ -65,21 +71,40 @@ app.use('/profile', require('./routes/profile'));
 app.use('/bids', bidRoutes);
 app.use('/contracts', contractRoutes);
 app.use('/work', workRoutes);
+app.use('/saved-jobs', require('./routes/savedJobs'));
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
+// API route not found handler
+app.use('/api/*', (req, res) => {
+    res.status(404).json({
         success: false,
-        error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+        error: 'API endpoint not found'
     });
 });
 
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    console.error('Stack:', err.stack);
+    
+    // Handle specific errors
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({
+            success: false,
+            error: err.message
+        });
+    }
+    
+    if (err.name === 'UnauthorizedError') {
+        return res.status(401).json({
+            success: false,
+            error: 'Unauthorized access'
+        });
+    }
+    
+    // Default error
+    res.status(500).json({
         success: false,
-        error: 'Endpoint not found'
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
     });
 });
 

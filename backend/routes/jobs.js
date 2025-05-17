@@ -24,5 +24,7 @@ router.post('/:id/proposals', auth, jobController.submitProposal);
 router.post('/:jobId/save', auth, jobController.saveJob);
 router.post('/:jobId/unsave', auth, jobController.unsaveJob);
 router.get('/saved', auth, jobController.getSavedJobs);
+// Add to jobs.js routes
+router.post('/:jobId/bids/:bidId/accept', auth, jobController.acceptBidAndCreateContract);
 
 module.exports = router;

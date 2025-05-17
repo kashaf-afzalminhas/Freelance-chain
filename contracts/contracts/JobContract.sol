@@ -1,5 +1,6 @@
-// contracts/JobContract.sol
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.19;
+
 
 contract JobContract {
     enum Status { Created, ClientSigned, FreelancerSigned, WorkSubmitted, Completed, Disputed }
