@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobService, bidService } from '../../../services/api';
 import { contractService } from '../../../services/ContractService'; // Make sure the filename matches exactly
+import { toast } from 'react-hot-toast';
+import { FileText } from 'lucide-react';
+
+const API_URL = 'http://localhost:5000'; // Update this if your backend runs elsewhere
 
 const MyJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -10,6 +14,7 @@ const MyJobs = () => {
   const [expandedJobId, setExpandedJobId] = useState(null);
   const [bids, setBids] = useState({});
   const [acceptingBid, setAcceptingBid] = useState(false);
+  const [editJob, setEditJob] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,41 +40,46 @@ const MyJobs = () => {
     }
   };
 
-// In MyJobs.jsx
-const handleAcceptBid = async (bidId, jobId) => {
-  try {
-    setAcceptingBid(true);
-    
-    // 1. Accept bid
-    await bidService.updateBidStatus(bidId, { status: 'accepted' });
+  const handleAcceptBid = async (bidId, jobId) => {
+    try {
+      setAcceptingBid(true);
+      
+      // 1. Accept bid
+      await bidService.updateBidStatus(bidId, { status: 'accepted' });
 
-    // 2. Create contract
-    const bid = bids[jobId].find(b => b._id === bidId);
-    const job = jobs.find(j => j._id === jobId);
-    
-    const contract = await contractService.createContract(
-      jobId,
-      bidId,
-      bid.freelancer?._id || bid.freelancerId?._id,
-      bid.bidAmount,
-      job.title,
-      job.description,
-      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    );
+      // 2. Create contract
+      const bid = bids[jobId].find(b => b._id === bidId);
+      const job = jobs.find(j => j._id === jobId);
+      
+      if (!bid || !bid.freelancerAddress) {
+        throw new Error('Freelancer address not found in bid data');
+      }
+      
+      const contract = await contractService.createContract(
+        jobId,
+        bidId,
+        bid.freelancerId,
+        bid.freelancerAddress,
+        bid.bidAmount,
+        job.title,
+        job.description,
+        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      );
 
-    // 3. Refresh data
-    await fetchContracts();
-    await fetchBids(jobId);
+      // 3. Refresh data
+      await fetchContracts();
+      await fetchBids(jobId);
 
-    // 4. Navigate
-    navigate(`/contracts/${contract._id}`);
-  } catch (error) {
-    console.error('Accept bid failed:', error);
-    setError(error.response?.data?.message || error.message);
-  } finally {
-    setAcceptingBid(false);
-  }
-};
+      // 4. Navigate
+      navigate(`/contracts/${contract._id}`);
+    } catch (error) {
+      console.error('Error accepting bid:', error);
+      toast.error(error.message || 'Failed to accept bid');
+    } finally {
+      setAcceptingBid(false);
+    }
+  };
+
   const handleRejectBid = async (bidId, jobId) => {
     try {
       await bidService.updateBidStatus(bidId, { status: 'rejected' });
@@ -81,6 +91,51 @@ const handleAcceptBid = async (bidId, jobId) => {
 
   const handleMessageFreelancer = (freelancerId) => {
     navigate(`/messages?userId=${freelancerId}`);
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm('Are you sure you want to delete this job? This cannot be undone.')) return;
+    try {
+      await jobService.deleteJob(jobId);
+      setJobs(jobs => jobs.filter(j => j._id !== jobId));
+      toast.success('Job deleted successfully!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete job');
+    }
+  };
+
+  const handleJobSave = (updatedJob) => {
+    setJobs(jobs => jobs.map(j => j._id === updatedJob._id ? updatedJob : j));
+    setEditJob(null);
+  };
+
+  const handleEditClick = (job) => {
+    console.log('Edit button clicked for job:', job);
+    setEditJob(job);
+  };
+
+  const handleFileClick = (file) => {
+    // Construct the full URL using the API base URL
+    const baseUrl = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
+    const fileUrl = `${baseUrl}${file.url}`;
+    
+    console.log('Opening file from MyJobs:', {
+      originalUrl: file.url,
+      fullUrl: fileUrl,
+      fileType: file.type
+    });
+
+    if (file.type === 'image' || file.type === 'pdf') {
+      window.open(fileUrl, '_blank');
+    } else {
+      // For other file types, trigger download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   if (loading) {
@@ -190,7 +245,7 @@ const handleAcceptBid = async (bidId, jobId) => {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                         </svg>
-                        Show Bids ({bids[job._id]?.length || 0})
+                        Show Bids ({bids[job._id] ? bids[job._id].length : '...' })
                       </>
                     )}
                   </button>
@@ -203,7 +258,7 @@ const handleAcceptBid = async (bidId, jobId) => {
                         <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                         <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
                       </svg>
-                      Proposals Received ({bids[job._id]?.length || 0})
+                      Proposals Received ({bids[job._id] ? bids[job._id].length : '...'})
                     </h3>
                     
                     {!bids[job._id] ? (
@@ -237,7 +292,38 @@ const handleAcceptBid = async (bidId, jobId) => {
                             </div>
                             <div className="p-4">
                               <p className="text-gray-700 mb-4">{bid.proposal}</p>
+                              {bid.bidMedia && bid.bidMedia.length > 0 && (
+                                <div className="mb-4">
+                                  <h4 className="font-semibold text-sm mb-2">Supporting Documents:</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {bid.bidMedia.map((media, idx) => (
+                                      <div
+                                        key={idx}
+                                        onClick={() => handleFileClick(media)}
+                                        className="flex items-center px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-xs cursor-pointer"
+                                      >
+                                        {media.type === 'image' ? (
+                                           <img
+                                             src={`${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${media.url}`}
+                                             alt={media.name}
+                                             className="h-5 w-5 object-cover rounded mr-1"
+                                            />
+                                        ) : (
+                                          <FileText className="h-4 w-4 mr-1" />
+                                        )}
+                                        <span className="mr-1">{media.name}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               <div className="flex flex-wrap justify-end space-x-3">
+                                <Link
+                                  to={`/bids/${bid._id}`}
+                                  className="px-4 py-2 rounded-md font-medium border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                                >
+                                  View Bid
+                                </Link>
                                 <button 
                                   onClick={() => handleRejectBid(bid._id, job._id)}
                                   className={`px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
@@ -290,12 +376,167 @@ const handleAcceptBid = async (bidId, jobId) => {
                   </div>
                 )}
               </div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => handleEditClick(job)} 
+                    className="p-2 text-yellow-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
+                    title="Edit Job"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteJob(job._id)} 
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
+                    title="Delete Job"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {editJob && (
+        <EditJobModal
+          job={editJob}
+          onClose={() => setEditJob(null)}
+          onSave={handleJobSave}
+        />
+      )}
     </div>
   );
 };
+
+function EditJobModal({ job, onClose, onSave }) {
+  const [form, setForm] = useState({
+    title: job.title,
+    description: job.description,
+    budget: job.budget,
+    duration: job.duration,
+  });
+  const [loading, setLoading] = useState(false);
+
+  // Add console log to verify modal is being rendered
+  console.log('EditJobModal rendered with job:', job);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const updated = await jobService.updateJob(job._id, form);
+      onSave(updated.data);
+      toast.success('Job updated successfully!');
+    } catch (err) {
+      console.error('Error updating job:', err);
+      toast.error(err.message || 'Failed to update job');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Edit Job</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">Title</label>
+            <input 
+              name="title" 
+              value={form.title} 
+              onChange={handleChange} 
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary focus:border-primary" 
+              required 
+            />
+          </div>
+          <div>
+            <label className="block mb-1 font-medium text-gray-700">Description</label>
+            <textarea 
+              name="description" 
+              value={form.description} 
+              onChange={handleChange} 
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary focus:border-primary" 
+              rows={4} 
+              required 
+            />
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block mb-1 font-medium text-gray-700">Budget</label>
+              <input 
+                name="budget" 
+                type="number" 
+                value={form.budget} 
+                onChange={handleChange} 
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary focus:border-primary" 
+                required 
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block mb-1 font-medium text-gray-700">Duration</label>
+              <select 
+                name="duration" 
+                value={form.duration} 
+                onChange={handleChange} 
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-primary focus:border-primary" 
+                required
+              >
+                <option value="">Select Duration</option>
+                <option value="3 to 6 months">3 to 6 months</option>
+                <option value="1 to 3 months">1 to 3 months</option>
+                <option value="Less than 1 month">Less than 1 month</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-6">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" 
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Saving...
+                </span>
+              ) : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default MyJobs;

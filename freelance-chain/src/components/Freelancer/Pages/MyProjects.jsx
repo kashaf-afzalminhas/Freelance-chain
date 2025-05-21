@@ -114,21 +114,34 @@ const MyProjects = () => {
           ) : (
             filteredProjects.map((project) => (
               <div key={project._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                {project.images && project.images.length > 0 ? (
+                {project.media && project.media.length > 0 ? (
                   <div className="h-48 overflow-hidden">
-                  <img
-  src={`data:${project.images[0]?.contentType};base64,${project.images[0]?.data}`}
-  alt={project.title}
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    e.target.onerror = null;
-    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTQgMTZMMTAgMTBMMTYgMTZNMjAgMTZMMTYgMTJMMjAgOE0yMCAyMEg0VjRIMjBWMjBaIiBzdHJva2U9IiM5Q0E0QjkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+';
-  }}
-/>
+                    {project.media[0].type === 'image' ? (
+                      <img
+                        src={`${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${project.media[0].url}`}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTQgMTZMMTAgMTBMMTYgMTZNMjAgMTZMMTYgMTJMMjAgOE0yMCAyMEg0VjRIMjBWMjBaIiBzdHJva2U9IiM5Q0E0QjkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+';
+                        }}
+                      />
+                    ) : project.media[0].type === 'video' ? (
+                      <video
+                        src={`${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${project.media[0].url}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="h-48 bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-500">No Image</span>
+                    <span className="text-gray-500">No Media</span>
                   </div>
                 )}
 
@@ -155,17 +168,27 @@ const MyProjects = () => {
 
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                     <Link
-                      to={`/editproject/${project._id}`}
-                      className="text-green-600 hover:text-green-800 font-medium"
+                      to={`/projects/${project._id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:text-indigo-800 font-medium"
                     >
-                      Edit
+                      View Project
                     </Link>
-                    <button
-                      onClick={() => handleDelete(project._id)}
-                      className="text-red-600 hover:text-red-800 font-medium"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex space-x-4">
+                      <Link
+                        to={`/editproject/${project._id}`}
+                        className="text-green-600 hover:text-green-800 font-medium"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(project._id)}
+                        className="text-red-600 hover:text-red-800 font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

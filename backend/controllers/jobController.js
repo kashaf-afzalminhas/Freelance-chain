@@ -191,3 +191,45 @@ exports.acceptBidAndCreateContract = async (req, res) => {
     });
   }
 };
+
+// Delete a job
+exports.deleteJob = async (req, res) => {
+  try {
+    const job = await Job.findOne({ _id: req.params.id, clientId: req.user._id });
+    
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found or unauthorized' });
+    }
+
+    await job.deleteOne();
+    res.json({ message: 'Job deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update a job
+exports.updateJob = async (req, res) => {
+  try {
+    const { title, description, budget, duration } = req.body;
+    
+    const job = await Job.findOne({ _id: req.params.id, clientId: req.user._id });
+    
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found or unauthorized' });
+    }
+
+    // Update only the fields that are provided
+    if (title) job.title = title;
+    if (description) job.description = description;
+    if (budget) job.budget = budget;
+    if (duration) job.duration = duration;
+
+    const updatedJob = await job.save();
+    res.json({ message: 'Job updated successfully', data: updatedJob });
+  } catch (error) {
+    console.error('Error updating job:', error);
+    res.status(500).json({ message: error.message });
+  }
+};

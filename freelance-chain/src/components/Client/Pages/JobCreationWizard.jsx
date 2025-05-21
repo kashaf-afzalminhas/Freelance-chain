@@ -34,7 +34,26 @@ const JobCreationWizard = () => {
       }
 
       setError(null);
-      const response = await jobService.createJob(jobData);
+
+      // Parse budget to a number
+      let parsedBudget;
+      if (jobData.budget.includes('ETH/hour')) {
+        // Assuming format is "min - max ETH/hour", extract max
+        const budgetParts = jobData.budget.split(' ');
+        parsedBudget = parseFloat(budgetParts[2]); // Get the max rate as a number
+      } else {
+        // Assuming fixed price is just the number as a string
+        parsedBudget = parseFloat(jobData.budget);
+      }
+
+      if (isNaN(parsedBudget)) {
+          setError("Invalid budget value.");
+          return;
+      }
+
+      const jobDataToSend = { ...jobData, budget: parsedBudget };
+
+      const response = await jobService.createJob(jobDataToSend);
       
       if (response.success) {
         navigate("/my-jobs");

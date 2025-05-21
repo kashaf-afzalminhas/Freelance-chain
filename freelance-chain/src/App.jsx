@@ -19,6 +19,7 @@ import RoleSelection from "./components/RoleSelection";
 import JobListPage from "./components/Freelancer/Pages/JobListPage";
 import CreateProject from "./components/Freelancer/Pages/CreateProject";
 import EditProject from "./components/Freelancer/Pages/EditProject";
+import ProjectDetails from "./components/Freelancer/Pages/ProjectDetails";
 import ProjectOverview from './components/Freelancer/Cards/projectOverview';
 import ProjectDescription from "./components/Freelancer/Cards/projectDiscription";
 import ProjectGallery from "./components/Freelancer/Cards/projectGallery";
@@ -40,6 +41,8 @@ import Profile from "./components/Client/Pages/Profile";
 import PublicProfilePage from "./components/Client/Pages/PublicProfilePage";
 import EditProfilePage from "./components/Client/Pages/EditProfilePage";
 import SavedJobsPage from "./components/Freelancer/Pages/SavedJobsPage";
+import BidDetails from "./components/Client/Pages/BidDetails";
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -65,6 +68,7 @@ const App = () => {
                     <Route path="/jobs" element={<JobListPage />} />
                     <Route path="/createproject" element={<CreateProject />} />
                     <Route path="/editproject/:id" element={<EditProject />} />
+                    <Route path="/projects/:id" element={<ProjectDetails />} />
                     <Route path="/projectOverview" element={<ProjectOverview />} />
                     <Route path="/projectDiscription" element={<ProjectDescription />} />
                     <Route path="/projectGallery" element={<ProjectGallery />} />
@@ -85,6 +89,7 @@ const App = () => {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/profile/public/:userId" element={<PublicProfilePage />} />
                     <Route path="/profile/edit" element={<EditProfilePage/>} />
+                    <Route path="/bids/:bidId" element={<BidDetails />} />
                   </Route>
                 </Routes>
               </ContractProvider>

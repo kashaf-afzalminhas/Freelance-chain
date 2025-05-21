@@ -1,9 +1,18 @@
 const mongoose = require("mongoose");
 
+const bidMediaSchema = new mongoose.Schema({
+  url: { type: String, required: true },
+  type: { type: String, required: true, enum: ['image', 'pdf', 'video', 'document'] },
+  name: { type: String, required: true },
+  size: { type: Number, required: true }, // Size in bytes
+  uploadedAt: { type: Date, default: Date.now }
+});
+
 const bidHistorySchema = new mongoose.Schema({
   proposal: String,
   bidAmount: Number,
   estimatedTime: String,
+  bidMedia: [bidMediaSchema],
   updatedAt: { type: Date, default: Date.now }
 });
 
@@ -38,6 +47,7 @@ const bidSchema = new mongoose.Schema({
     required: true,
     enum: ["7 days", "14 days", "30 days", "custom"]
   },
+  bidMedia: [bidMediaSchema],
   status: { 
     type: String, 
     enum: ["pending", "accepted", "rejected", "withdrawn"], 

@@ -1,7 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useWeb3 } from "../../../context/Web3Context";
 import { bidService } from "../../../services/api";
 import { useNavigate } from "react-router-dom";
+import { Upload, X, FileText, Image as ImageIcon, Video } from 'lucide-react';
+
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif',
+  'application/pdf', 'video/mp4',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
 
 const BidForm = ({ jobId, onSubmit }) => {
   const [proposal, setProposal] = useState("");
@@ -10,67 +17,115 @@ const BidForm = ({ jobId, onSubmit }) => {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [topBids, setTopBids] = useState([]);
+  const [loadingTopBids, setLoadingTopBids] = useState(true);
 
   const { account, connectWallet } = useWeb3();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchTopBids = async () => {
+      try {
+        const response = await bidService.getTopBids(jobId);
+        setTopBids(response.data);
+      } catch (err) {
+        console.error('Error fetching top bids:', err);
+      } finally {
+        setLoadingTopBids(false);
+      }
+    };
+    if (jobId) fetchTopBids();
+  }, [jobId]);
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => {
+      const isValidType = ALLOWED_TYPES.includes(file.type);
+      const isValidSize = file.size <= 20 * 1024 * 1024;
+      if (!isValidType) {
+        setError('Invalid file type. Only images, PDFs, videos, and documents are allowed.');
+        return false;
+      }
+      if (!isValidSize) {
+        setError('File size must be less than 20MB');
+        return false;
+      }
+      return true;
+    });
+    setSelectedFiles(prev => [...prev, ...validFiles].slice(0, 5));
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getFilePreview = (file) => {
+    if (file.type.startsWith('image/')) {
+      return <img src={URL.createObjectURL(file)} alt={file.name} className="h-10 w-10 object-cover rounded mr-2" />;
+    }
+    if (file.type === 'application/pdf' || file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      return <FileText className="h-6 w-6 text-red-500 mr-2" />;
+    }
+    if (file.type.startsWith('video/')) {
+      return <Video className="h-6 w-6 text-purple-500 mr-2" />;
+    }
+    return <FileText className="h-6 w-6 text-gray-500 mr-2" />;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!account) {
       connectWallet();
-      // setError("Please connect your wallet first");
       return;
     }
-    
     if (!jobId) {
       setError("Invalid job ID");
       return;
     }
-  
     if (proposal.length < 50) {
       setError("Proposal must be at least 50 characters");
       return;
     }
-
     setIsSubmitting(true);
     setError("");
-
     try {
       const numericBidAmount = parseFloat(bidAmount);
-      if (isNaN(numericBidAmount)) {
-        throw new Error("Please enter a valid bid amount");
-      }
-      if (numericBidAmount < 0.001) {
-        throw new Error("Bid amount must be at least 0.001 ETH");
-      }
+      if (isNaN(numericBidAmount)) throw new Error("Please enter a valid bid amount");
+      if (numericBidAmount < 0.001) throw new Error("Bid amount must be at least 0.001 ETH");
 
-      const bidData = {
-        jobId,
-        proposal,
-        bidAmount: numericBidAmount,
-        estimatedTime,
-        freelancerAddress: account
-      };
+      // Create FormData object
+      const formData = new FormData();
+      formData.append('jobId', jobId);
+      formData.append('proposal', proposal);
+      formData.append('bidAmount', numericBidAmount);
+      formData.append('estimatedTime', estimatedTime);
+      formData.append('freelancerAddress', account);
 
-      const result = await bidService.submitBid(bidData);
+      // Append each file with proper field name
+      selectedFiles.forEach((file, index) => {
+        console.log(`Appending file ${index + 1}:`, file.name, file.type, file.size);
+        formData.append('bidMedia', file);
+      });
 
+      // Log the FormData contents for debugging
+      console.log('Submitting bid with files:', selectedFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: f.size
+      })));
+
+      const result = await bidService.submitBid(formData);
+      
       if (result.success) {
-        // Show success message
         setSuccess(true);
-        
-        // Clear form
         setProposal("");
         setBidAmount("");
         setEstimatedTime("7 days");
-        
-        // Call onSubmit if provided, otherwise navigate after 3 seconds
+        setSelectedFiles([]);
         setTimeout(() => {
-          if (typeof onSubmit === 'function') {
-            onSubmit();
-          } else {
-            navigate(`/jobs/${jobId}`);
-          }
+          if (typeof onSubmit === 'function') onSubmit();
+          else navigate(`/jobs/${jobId}`);
         }, 3000);
       } else {
         throw new Error(result.message || "Bid submission failed");
@@ -86,7 +141,6 @@ const BidForm = ({ jobId, onSubmit }) => {
   return (
     <div className="mt-8 p-8 bg-white rounded-lg shadow-lg border border-gray-100">
       <h3 className="text-2xl font-bold mb-6 text-secondary">Submit Your Proposal</h3>
-      
       {error && (
         <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
           <p className="flex items-center">
@@ -97,7 +151,6 @@ const BidForm = ({ jobId, onSubmit }) => {
           </p>
         </div>
       )}
-      
       {success && (
         <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded">
           <p className="flex items-center">
@@ -108,7 +161,18 @@ const BidForm = ({ jobId, onSubmit }) => {
           </p>
         </div>
       )}
-      
+      {!loadingTopBids && topBids.length > 0 && (
+        <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded">
+          <h4 className="font-semibold mb-2">Current Top Bids:</h4>
+          <div className="flex flex-wrap gap-2">
+            {topBids.map((bid, index) => (
+              <span key={index} className="px-3 py-1 bg-blue-100 rounded-full text-sm">
+                {bid.bidAmount} ETH
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className={`space-y-6 ${success ? 'opacity-50 pointer-events-none' : ''}`}>
         <div>
           <label className="block mb-2 font-medium text-gray-700">Your Proposal</label>
@@ -123,7 +187,6 @@ const BidForm = ({ jobId, onSubmit }) => {
           />
           <p className="mt-1 text-sm text-gray-500">{proposal.length} / 50 characters minimum</p>
         </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block mb-2 font-medium text-gray-700">Bid Amount (ETH)</label>
@@ -143,7 +206,6 @@ const BidForm = ({ jobId, onSubmit }) => {
               </div>
             </div>
           </div>
-          
           <div>
             <label className="block mb-2 font-medium text-gray-700">Estimated Delivery Time</label>
             <select
@@ -158,7 +220,55 @@ const BidForm = ({ jobId, onSubmit }) => {
             </select>
           </div>
         </div>
-        
+        <div>
+          <label className="block mb-2 font-medium text-gray-700">Supporting Documents (Optional)</label>
+          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+            <div className="space-y-1 text-center">
+              <Upload className="mx-auto h-12 w-12 text-gray-400" />
+              <div className="flex text-sm text-gray-600">
+                <label
+                  htmlFor="file-upload"
+                  className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary"
+                >
+                  <span>Upload files</span>
+                  <input
+                    id="file-upload"
+                    name="file-upload"
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    onChange={handleFileSelect}
+                    accept=".jpg,.jpeg,.png,.gif,.pdf,.mp4,.doc,.docx"
+                  />
+                </label>
+                <p className="pl-1">or drag and drop</p>
+              </div>
+              <p className="text-xs text-gray-500">
+                Up to 5 files, 20MB each. Supported formats: Images, PDFs, Videos, Documents
+              </p>
+            </div>
+          </div>
+          {selectedFiles.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center">
+                    {getFilePreview(file)}
+                    <span className="text-sm text-gray-600 truncate max-w-xs">{file.name}</span>
+                    <span className="text-xs text-gray-400 ml-2">{(file.size / 1024).toFixed(1)}KB</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div className="pt-4">
           <button
             type="submit"

@@ -16,16 +16,23 @@ const getAuthConfig = () => {
 };
 
 export const contractService = {
-  createContract: async (jobId, bidId, freelancerId, bidAmount, jobTitle, jobDescription, deadline) => {
+  createContract: async (jobId, bidId, freelancerId, freelancerAddress, bidAmount, jobTitle, jobDescription, deadline) => {
     try {
       // 1. Create contract in backend
       const response = await api.post('/contracts', {
-        jobId, bidId, freelancerId, bidAmount, jobTitle, jobDescription, deadline
+        jobId, 
+        bidId, 
+        freelancerId,
+        freelancerAddress,
+        bidAmount, 
+        jobTitle, 
+        jobDescription, 
+        deadline
       }, getAuthConfig());
 
       // 2. Deploy smart contract
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const signer = provider.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const contractFactory = new ethers.ContractFactory(
         JobContractArtifact.abi,
         JobContractArtifact.bytecode,
@@ -37,26 +44,27 @@ export const contractService = {
       
       // Deploy contract
       const contract = await contractFactory.deploy();
-      await contract.deployed();
+      await contract.waitForDeployment();
 
       // Create contract instance
       const contractInstance = await contract.createContract(
-        freelancerId,
-        ethers.utils.parseEther(bidAmount.toString()),
+        freelancerAddress,
+        ethers.parseEther(bidAmount.toString()),
         deadlineUnix,
         jobTitle,
         jobDescription
       );
+      await contractInstance.wait();
 
       // 3. Update backend with contract address
       await api.put(`/contracts/${response.data._id}`, {
-        contractAddress: contract.address,
+        contractAddress: await contract.getAddress(),
         transactionHash: contractInstance.hash
       }, getAuthConfig());
 
       return {
         ...response.data,
-        contractAddress: contract.address,
+        contractAddress: await contract.getAddress(),
         transactionHash: contractInstance.hash
       };
     } catch (error) {
@@ -65,7 +73,7 @@ export const contractService = {
     }
   },
 
- getUserContracts: async () => {
+  getUserContracts: async () => {
     try {
       const response = await api.get('/contracts/user', getAuthConfig());
       return response.data;
@@ -95,11 +103,12 @@ export const contractService = {
       }
 
       // 2. Sign contract on blockchain
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
       const contract = new ethers.Contract(
         contractDetails.contractAddress,
         JobContractArtifact.abi,
-        provider.getSigner()
+        signer
       );
 
       const tx = await contract.signContract(0);

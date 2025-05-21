@@ -9,21 +9,33 @@ const setupSocket = require('./config/socket');
 const bidRoutes = require('./routes/bidRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const workRoutes = require('./routes/workRoutes');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+const bidsDir = path.join(uploadsDir, 'bids');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(bidsDir)) {
+  fs.mkdirSync(bidsDir, { recursive: true });
+}
 
 // Initialize Web3 with Ganache
 const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:8545';
 const web3 = new Web3(new Web3.providers.HttpProvider(ganacheUrl));
 
 // Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
 }));
 
 // Make Web3 available to routes
@@ -38,8 +50,31 @@ app.use((req, res, next) => {
     next();
 });
 
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files - Serve uploads directory with proper headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Set proper content type based on file extension
+    const ext = path.extname(filePath).toLowerCase();
+    const contentTypes = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.mp4': 'video/mp4'
+    };
+    
+    if (contentTypes[ext]) {
+      res.set('Content-Type', contentTypes[ext]);
+    }
+    
+    // Allow cross-origin requests for files
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
 
 // Database connection
 mongoose.connect(process.env.MONGO_URI, {

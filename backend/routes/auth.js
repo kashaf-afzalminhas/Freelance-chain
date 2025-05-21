@@ -172,6 +172,7 @@ router.post('/check-wallet', async (req, res) => {
       }
   
       // Create a new user
+      console.log('Attempting to create new user with walletAddress:', walletAddress);
       const user = new User({
         walletAddress,
         password, // In a real app, hash the password before saving
@@ -179,6 +180,7 @@ router.post('/check-wallet', async (req, res) => {
       });
   
       await user.save();
+      console.log('User successfully saved with ID:', user._id);
   
       // Generate JWT token
       const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -201,58 +203,39 @@ router.post('/check-wallet', async (req, res) => {
   });
 
 // Role Selection
-// router.post('/select-role', async (req, res) => {
-//     const { userId, role, name, extraData } = req.body;
-  
-//     try {
-//       // Find the user by userId
-//       const user = await User.findById(userId);
-//       if (!user) {
-//         return res.status(404).json({ message: 'User not found' });
-//       }
-  
-//       // Update the user's role and name
-//       user.role = role;
-//       user.name = name;
-//       await user.save();
-  
-//       // Create a Client or Freelancer profile based on the selected role
-//       if (role === 'client') {
-//         await Client.create({ userId: user._id, company: extraData.company });
-//       } else if (role === 'freelancer') {
-//         await Freelancer.create({
-//           userId: user._id,
-//           skills: extraData.skills,
-//           experience: extraData.experience,
-//         });
-//       }
-  
-//       res.status(200).json({ message: 'Role assigned successfully', user });
-//     } catch (error) {
-//       console.error('Role selection error', error);
-//       res.status(500).json({ message: 'Server error' });
-//     }
-//   });
-// Role Selection
 router.post('/select-role', async (req, res) => {
     const { userId, role, name, extraData } = req.body;
 
     try {
+        console.log('Attempting to select role for user ID:', userId, 'Role:', role);
         const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            console.log('User not found for role selection:', userId);
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         user.role = role;
         user.name = name;
         await user.save();
+        console.log('User role and name updated for user ID:', user._id);
 
         if (role === 'client') {
-            await Client.create({ userId: user._id, company: extraData.company });
+            console.log('Creating Client profile for user ID:', user._id, 'Company:', extraData.company);
+            const clientProfile = await Client.create({ userId: user._id, company: extraData.company });
+            console.log('Client profile created with ID:', clientProfile._id);
         } else if (role === 'freelancer') {
-            await Freelancer.create({ userId: user._id, skills: extraData.skills, experience: extraData.experience });
+            console.log('Creating Freelancer profile for user ID:', user._id, 'Skills:', extraData.skills, 'Experience:', extraData.experience);
+            const freelancerProfile = await Freelancer.create({
+              userId: user._id,
+              skills: extraData.skills,
+              experience: extraData.experience,
+            });
+            console.log('Freelancer profile created with ID:', freelancerProfile._id);
         }
 
         res.status(200).json({ message: 'Role assigned successfully', user });
     } catch (error) {
+        console.error('Role selection error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

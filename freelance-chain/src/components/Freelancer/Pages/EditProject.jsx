@@ -14,11 +14,11 @@ const EditProject = () => {
     description: '',
     price: '',
     requirements: [''],
-    images: [],
+    media: [],
     status: 'active'
   });
   const [objectUrls, setObjectUrls] = useState(new Set());
-  const [newImages, setNewImages] = useState([]);
+  const [newMediaFiles, setNewMediaFiles] = useState([]);
 
   const categories = [
     { value: 'web', label: 'Web Development' },
@@ -32,8 +32,8 @@ const EditProject = () => {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        const project = await projectService.getMyProjects();
-        const currentProject = project.find(p => p._id === id);
+        const myProjects = await projectService.getMyProjects();
+        const currentProject = myProjects.find(p => p._id === id);
         if (currentProject) {
           setProjectData({
             title: currentProject.title,
@@ -41,7 +41,7 @@ const EditProject = () => {
             description: currentProject.description,
             price: currentProject.price,
             requirements: currentProject.requirements || [''],
-            images: currentProject.images || [],
+            media: currentProject.media || [],
             status: currentProject.status
           });
         } else {
@@ -49,7 +49,8 @@ const EditProject = () => {
         }
         setLoading(false);
       } catch (err) {
-        setError(err.message);
+        console.error('Error fetching project for edit:', err);
+        setError(err.message || 'Failed to load project details');
         setLoading(false);
       }
     };
@@ -98,49 +99,78 @@ const EditProject = () => {
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter(file => {
-      const isValid = file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024; // 5MB limit
-      if (!isValid) {
+      const allowedTypes = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      const isValidType = allowedTypes.some(typePrefix => file.type.startsWith(typePrefix)) ||
+                          allowedTypes.includes(file.type);
+      const isValidSize = file.size <= 20 * 1024 * 1024;
+
+      if (!isValidType) {
         setImageErrors(prev => ({
           ...prev,
-          [file.name]: 'File must be an image and less than 5MB'
+          [file.name]: 'Invalid file type. Supported formats: Images, Videos, PDFs, Docs.'
         }));
+        console.warn('Invalid file type selected:', file.type);
       }
-      return isValid;
+      if (!isValidSize) {
+        setImageErrors(prev => ({
+          ...prev,
+          [file.name]: 'File size must be less than 20MB'
+        }));
+        console.warn('File size too large:', file.size);
+      }
+      return isValidType && isValidSize;
     });
 
-    const newObjectUrls = validFiles.map(file => URL.createObjectURL(file));
-    setObjectUrls(prev => new Set([...prev, ...newObjectUrls]));
-    setNewImages(prev => [...prev, ...validFiles]);
+    // Store the actual files for upload
+    setNewMediaFiles(prev => [...prev, ...validFiles]);
 
+    // Create preview URLs for display
+    const previewMedia = validFiles.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('image/') ? 'image' : 
+            file.type.startsWith('video/') ? 'video' : 'document',
+      name: file.name,
+      fileObject: file
+    }));
+
+    // Add preview URLs to objectUrls for cleanup
+    previewMedia.forEach(item => setObjectUrls(prev => new Set([...prev, item.url])));
+
+    // Update project data with new media
     setProjectData(prev => ({
       ...prev,
-      images: [...prev.images, ...newObjectUrls]
+      media: [...prev.media, ...previewMedia]
     }));
   };
 
   const handleImageError = (index) => {
     setImageErrors(prev => ({
       ...prev,
-      [index]: 'Failed to load image'
+      [index]: 'Failed to load media'
     }));
   };
 
   const removeImage = (index) => {
-    const imageUrl = projectData.images[index];
-    if (imageUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(imageUrl);
+    const mediaItemToRemove = projectData.media[index];
+
+    if (mediaItemToRemove.url.startsWith('blob:')) {
+      URL.revokeObjectURL(mediaItemToRemove.url);
       setObjectUrls(prev => {
         const newUrls = new Set(prev);
-        newUrls.delete(imageUrl);
+        newUrls.delete(mediaItemToRemove.url);
         return newUrls;
       });
-      setNewImages(prev => prev.filter((_, i) => i !== index));
+      setNewMediaFiles(prev => prev.filter(file => file !== mediaItemToRemove.fileObject));
+       console.log('Removed new media preview. newMediaFiles:', newMediaFiles);
+    } else {
+       console.log('Marked existing media for removal (will be handled in submit).', mediaItemToRemove);
     }
 
     setProjectData(prev => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      media: prev.media.filter((_, i) => i !== index)
     }));
+
     setImageErrors(prev => {
       const newErrors = { ...prev };
       delete newErrors[index];
@@ -160,25 +190,28 @@ const EditProject = () => {
       formData.append('description', projectData.description);
       formData.append('price', projectData.price);
       formData.append('status', projectData.status);
-      projectData.requirements.forEach((req, index) => {
-        formData.append(`requirements[${index}]`, req);
+
+      // Handle requirements
+      const validRequirements = projectData.requirements.filter(req => req.trim());
+      formData.append('requirements', JSON.stringify(validRequirements));
+
+      // Handle existing media
+      const existingMediaToKeep = projectData.media.filter(item => !item.url.startsWith('blob:'));
+      existingMediaToKeep.forEach(item => {
+        formData.append('existingMedia', item.url);
       });
 
-      // Add existing images that are not blob URLs
-      const existingImages = projectData.images.filter(url => !url.startsWith('blob:'));
-      existingImages.forEach((url, index) => {
-        formData.append(`existingImages[${index}]`, url);
-      });
-
-      // Add new images
-      newImages.forEach((file, index) => {
-        formData.append(`images`, file);
+      // Handle new media files
+      newMediaFiles.forEach(file => {
+        formData.append('media', file);
       });
 
       await projectService.updateProject(id, formData);
       navigate('/my-projects');
     } catch (err) {
-      setError(err.message || 'Failed to update project');
+      console.error('Error updating project:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update project';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -321,10 +354,10 @@ const EditProject = () => {
               </button>
             </div>
 
-            {/* Project Images */}
+            {/* Project Media */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Images
+                Project Media
               </label>
               <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
                 <div className="space-y-1 text-center">
@@ -347,13 +380,13 @@ const EditProject = () => {
                       htmlFor="file-upload"
                       className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
                     >
-                      <span>Upload images</span>
+                      <span>Upload files</span>
                       <input
                         id="file-upload"
                         name="file-upload"
                         type="file"
                         multiple
-                        accept="image/*"
+                        accept="image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,text/plain,application/zip,application/x-zip-compressed"
                         onChange={handleImageUpload}
                         className="sr-only"
                       />
@@ -361,42 +394,33 @@ const EditProject = () => {
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    PNG, JPG, GIF up to 5MB
+                    Up to 10 files, 20MB each. Supported formats: Images, Videos, PDFs, Docs, Sheets, Presentations, Text, Zips
                   </p>
                 </div>
               </div>
 
-              {projectData.images.length > 0 ? (
+              {projectData.media.length > 0 ? (
                 <div className="mt-4 grid grid-cols-3 gap-4">
-                  {projectData.images.map((url, index) => (
+                  {projectData.media.map((mediaItem, index) => (
                     <div key={index} className="relative group">
-                      <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100">
-                        {imageErrors[index] ? (
-                          <div className="flex items-center justify-center h-full bg-gray-100">
-                            <svg
-                              className="h-12 w-12 text-gray-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                          </div>
-                        ) : (
+                      <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 flex items-center justify-center">
+                        {mediaItem.type && mediaItem.type.startsWith('image') ? (
                           <img
-                            src={url}
-                            alt={`Project image ${index + 1}`}
+                            src={mediaItem.url.startsWith('blob:') ? mediaItem.url : `${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${mediaItem.url}`}
+                            alt={mediaItem.name || 'Project media'}
                             onError={() => handleImageError(index)}
                             className="h-full w-full object-cover object-center"
                           />
+                        ) : mediaItem.type === 'video' ? (
+                           <video controls src={mediaItem.url.startsWith('blob:') ? mediaItem.url : `${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${mediaItem.url}`} className="h-full w-full object-cover object-center" />
+                        ) : (
+                           <div className="flex flex-col items-center p-4">
+                              <svg className="h-8 w-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                             <p className="text-xs text-gray-600 text-center truncate w-full px-2">{mediaItem.name || 'Document'}</p>
+                           </div>
                         )}
                       </div>
-                      {imageErrors[index] && (
+                       {imageErrors[index] && (
                         <p className="mt-1 text-xs text-red-600">{imageErrors[index]}</p>
                       )}
                       <button
@@ -423,7 +447,7 @@ const EditProject = () => {
                 </div>
               ) : (
                 <div className="mt-4 text-center text-gray-500">
-                  No images uploaded yet
+                  No media uploaded yet
                 </div>
               )}
             </div>

@@ -55,6 +55,7 @@ const Navbar = () => {
       >
         My Contracts
       </Link>
+      
     </>
   );
 

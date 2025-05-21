@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
+console.log('API_URL used in api.js:', API_URL);
 export const api = axios.create({  // Export the api object as a named export
   baseURL: API_URL,
   headers: {
@@ -83,7 +84,7 @@ export const markMessageAsRead = (messageId) =>
 //export const getPublicUserProfile = (userId) => api.get(/profile/public/${userId});
 
 
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
 const authHeaders = (token) => ({
   headers: { Authorization: `Bearer ${token}` },
 });
@@ -118,6 +119,16 @@ export const projectService = {
     }
   },
 
+  // Get project by ID
+  getProjectById: async (id) => {
+    try {
+      const response = await api.get(`/projects/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Get user's projects
   getMyProjects: async () => {
     try {
@@ -138,33 +149,14 @@ export const projectService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Create project error:', error);
-      throw error.response?.data || error.message;
+      console.error('Error creating project:', error);
+      throw error.response?.data?.message || 'Failed to create project';
     }
   },
 
   // Update a project
-  updateProject: async (id, projectData) => {
+  updateProject: async (id, formData) => {
     try {
-      const formData = new FormData();
-      Object.keys(projectData).forEach(key => {
-        if (key === 'images') {
-          projectData[key].forEach(file => {
-            formData.append('images', file);
-          });
-        } else if (key === 'existingImages') {
-          projectData[key].forEach((url, index) => {
-            formData.append(`existingImages[${index}]`, url);
-          });
-        } else if (key === 'requirements') {
-          projectData[key].forEach((req, index) => {
-            formData.append(`requirements[${index}]`, req);
-          });
-        } else {
-          formData.append(key, projectData[key]);
-        }
-      });
-
       const response = await api.patch(`/projects/${id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -172,6 +164,7 @@ export const projectService = {
       });
       return response.data;
     } catch (error) {
+      console.error('Update project error:', error);
       throw error.response?.data || error.message;
     }
   },
@@ -209,16 +202,28 @@ export const projectService = {
 };
 
 export const bidService = {
-  submitBid: async (bidData) => {
+  submitBid: async (formData) => {
     try {
       // Log the complete bid data
-      console.log('Submitting bid with data:', JSON.stringify(bidData, null, 2));
+      console.log('Submitting bid with data:', {
+        jobId: formData.get('jobId'),
+        proposal: formData.get('proposal'),
+        bidAmount: formData.get('bidAmount'),
+        estimatedTime: formData.get('estimatedTime'),
+        freelancerAddress: formData.get('freelancerAddress'),
+        files: formData.getAll('bidMedia').map(f => f.name)
+      });
       
       // Log the current token
       const token = localStorage.getItem('authToken');
       console.log('Current auth token:', token);
 
-      const response = await api.post('/bids/submit', bidData);
+      const response = await api.post('/bids/submit', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
       console.log('Bid submission response:', response.data);
       return response.data;
     } catch (error) {
@@ -254,15 +259,33 @@ export const bidService = {
       throw error.response?.data || error.message;
     }
   },
-  // Update a bid
-  updateBidStatus: async (bidId, statusData) => {
+
+  // Get details of a specific bid
+  getBidDetails: async (bidId) => {
     try {
-      const response = await api.put(`/bids/${bidId}/status`, statusData);
+      const response = await api.get(`/bids/${bidId}`);
       return response.data;
     } catch (error) {
+      console.error('Get bid details error:', error);
       throw error.response?.data || error.message;
     }
   },
+
+  // Update a bid
+  updateBid: async (id, formData) => {
+    try {
+      const response = await api.put(`/bids/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Update bid error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
   // Withdraw a bid
   withdrawBid: async (bidId) => {
     try {
@@ -273,15 +296,19 @@ export const bidService = {
       throw error.response?.data || error.message;
     }
   },
-  updateBidStatus: async (bidId, statusData) => {
+
+  // Get top bids for a job
+  getTopBids: async (jobId, limit = 5) => {
     try {
-      const response = await api.put(`/bids/${bidId}/status`, statusData);
+      const response = await api.get(`/bids/top/${jobId}?limit=${limit}`);
       return response.data;
     } catch (error) {
+      console.error('Get top bids error:', error);
       throw error.response?.data || error.message;
     }
   }
 };
+
 export const jobService = {
   // Get all jobs
   getJobs: async () => {
@@ -320,6 +347,26 @@ export const jobService = {
   updateJobStatus: async (id, status) => {
     try {
       const response = await api.put(`/jobs/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Delete a job
+  deleteJob: async (id) => {
+    try {
+      const response = await api.delete(`/jobs/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Update a job
+  updateJob: async (id, jobData) => {
+    try {
+      const response = await api.put(`/jobs/${id}`, jobData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

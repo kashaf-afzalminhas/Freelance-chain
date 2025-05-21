@@ -23,30 +23,52 @@ exports.createContract = async (req, res) => {
         };
 
         // Deploy contract to blockchain
+        console.log('Attempting to deploy contract with data:', contractData);
         const result = await contractUtils.deployContract(contractData);
         
         // Create contract in database
-        const contract = new Contract({
-            job: req.body.jobId,
-            bid: req.body.bidId,
-            client: req.user._id, // Assuming req.user is set by auth middleware
-            freelancer: req.body.freelancerId,
-            contractAddress: result.address,
-            bidAmount: req.body.bidAmount,
-            jobTitle: req.body.jobTitle,
-            jobDescription: req.body.jobDescription,
-            deadline: req.body.deadline,
-            transactionHash: result.transactionHash
-        });
+        try {
+            console.log('Preparing contract data for database save:', {
+                job: req.body.jobId,
+                bid: req.body.bidId,
+                client: req.user._id,
+                freelancer: req.body.freelancerId,
+                contractAddress: result.address,
+                bidAmount: req.body.bidAmount,
+                jobTitle: req.body.jobTitle,
+                jobDescription: req.body.jobDescription,
+                deadline: req.body.deadline,
+                transactionHash: result.transactionHash
+            });
+            const contract = new Contract({
+                job: req.body.jobId,
+                bid: req.body.bidId,
+                client: req.user._id, // Assuming req.user is set by auth middleware
+                freelancer: req.body.freelancerId,
+                contractAddress: result.address,
+                bidAmount: req.body.bidAmount,
+                jobTitle: req.body.jobTitle,
+                jobDescription: req.body.jobDescription,
+                deadline: req.body.deadline,
+                transactionHash: result.transactionHash
+            });
 
-        await contract.save();
-        
-        res.status(201).json({
-            success: true,
-            data: contract
-        });
+            await contract.save();
+            console.log('Contract successfully saved to database with ID:', contract._id);
+
+            res.status(201).json({
+                success: true,
+                data: contract
+            });
+        } catch (dbError) {
+            console.error('Error saving contract to database:', dbError);
+            // You might want to handle this specific database error differently
+            // Perhaps log it and still return a success if blockchain deployment was fine?
+            // For now, re-throw to be caught by the main try/catch
+            throw dbError; 
+        }
     } catch (err) {
-        console.error('Error creating contract:', err);
+        console.error('Error in createContract function:', err);
         res.status(500).json({
             success: false,
             error: err.message || 'Failed to create contract'

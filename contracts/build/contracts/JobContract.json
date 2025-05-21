@@ -170,8 +170,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [],
@@ -184,8 +183,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [
@@ -335,8 +333,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.8.19+commit.7dd6d404\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"contractId\",\"type\":\"uint256\"}],\"name\":\"ContractCompleted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"contractId\",\"type\":\"uint256\"}],\"name\":\"ContractCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"contractId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"raisedBy\",\"type\":\"address\"}],\"name\":\"DisputeRaised\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"contractId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"signer\",\"type\":\"address\"}],\"name\":\"Signed\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"contractId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"approver\",\"type\":\"address\"}],\"name\":\"WorkApproved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"contractId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"workHash\",\"type\":\"string\"}],\"name\":\"WorkSubmitted\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_contractId\",\"type\":\"uint256\"}],\"name\":\"approveWork\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"contracts\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"client\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"freelancer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"jobTitle\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"jobDescription\",\"type\":\"string\"},{\"internalType\":\"enum JobContract.Status\",\"name\":\"status\",\"type\":\"uint8\"},{\"internalType\":\"bool\",\"name\":\"clientApproved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"freelancerApproved\",\"type\":\"bool\"},{\"internalType\":\"string\",\"name\":\"workSubmissionHash\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_freelancer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_deadline\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_jobTitle\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_jobDescription\",\"type\":\"string\"}],\"name\":\"createContract\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_contractId\",\"type\":\"uint256\"}],\"name\":\"getContract\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"client\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"freelancer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"bidAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"deadline\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"jobTitle\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"jobDescription\",\"type\":\"string\"},{\"internalType\":\"enum JobContract.Status\",\"name\":\"status\",\"type\":\"uint8\"},{\"internalType\":\"string\",\"name\":\"workSubmissionHash\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_contractId\",\"type\":\"uint256\"}],\"name\":\"raiseDispute\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_contractId\",\"type\":\"uint256\"}],\"name\":\"signContract\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_contractId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_workHash\",\"type\":\"string\"}],\"name\":\"submitWork\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/JobContract.sol\":\"JobContract\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/JobContract.sol\":{\"keccak256\":\"0xeaa97c5ce0b0808788707fbd761de036f3a381ed773ab304460362cbdfd6488a\",\"license\":\"UNLICENSED\",\"urls\":[\"bzz-raw://7e6e0a52e944218fffd192767f03b3de5b96301783b8e2003ed370756516a4ca\",\"dweb:/ipfs/Qmek9razvrXmrNTGmv7wCHoL34NGrvXwmGzy6veZfQUU7S\"]}},\"version\":1}",
@@ -13900,13 +13897,24 @@
     "1747118299432": {
       "events": {},
       "links": {},
-      "address": "0xA6Ab05E7601CD4265d1A20a87cb750B2ad6e4837",
-      "transactionHash": "0x07ec4790c5c820425479c8084d52fdec8012e4fc09c6278c6f7ff8043cfbdb11"
+      "address": "0xf06DfC2b6a1964A17401DBf99CCC164f6141C6f3",
+      "transactionHash": "0x96f7610dca8476344bfd4bd8b555888c5c7af19a9756e51c948b0f29601c32a1"
+    },
+    "1747473723276": {
+      "events": {},
+      "links": {},
+      "address": "0xE89A0ceadC2ec03377997Aa6eB83976188249a01",
+      "transactionHash": "0x9d0b2a3105f4bc07f6e9edb1a8c68445783f0134cc8a6b36af41e920406fd729"
+    },
+    "1747548690292": {
+      "events": {},
+      "links": {},
+      "address": "0xE04097d4F44Caf1E07010C242161240aFb69c892",
+      "transactionHash": "0x4c8b400db2934997f91706c30371fa47de4814e6e897494fce00a54185f301c3"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2025-05-15T08:43:42.763Z",
-  "networkType": "ethereum",
+  "updatedAt": "2025-05-18T09:01:38.724Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},
