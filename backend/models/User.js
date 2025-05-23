@@ -6,7 +6,11 @@ const UserSchema = new mongoose.Schema({
     role: { type: String, enum: ['client', 'freelancer'], default: null },
     name: { type: String },
     bio: { type: String }, // General bio field for all users
-    portfolioLinks: { type: [String] }, // General portfolio links for all users
+    portfolioLinks: {
+        linkedin: { type: String },
+        github: { type: String },
+        personalPortfolio: { type: String }
+    },
     profileImage: { type: String }, // URL or IPFS hash for profile image
     ratings: { type: Number, default: 0 }, 
     savedJobs: [{

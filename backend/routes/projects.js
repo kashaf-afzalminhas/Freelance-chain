@@ -187,7 +187,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('freelancer', 'name');
+      .populate('freelancer', 'name _id');
     
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });

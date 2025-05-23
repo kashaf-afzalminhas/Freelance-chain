@@ -261,10 +261,10 @@ const JobDetail = () => {
               <h2 className="text-lg font-bold text-[#0C3B2E] mb-4">About the Client</h2>
               <div className="flex items-center">
                 <div className="h-12 w-12 rounded-full bg-[#6D9773] flex items-center justify-center text-white font-bold text-lg">
-                  C
+                  {job.clientName?.charAt(0) || 'C'}
                 </div>
                 <div className="ml-4">
-                  <h3 className="text-lg font-medium text-gray-900">Client</h3>
+                  <h3 className="text-lg font-medium text-gray-900">{job.clientName || 'Client'}</h3>
                   <p className="text-gray-500">Project Owner</p>
                 </div>
               </div>
@@ -290,12 +290,26 @@ const JobDetail = () => {
                 </div>
               </div>
               
-              <button className="w-full mt-6 py-2 px-4 bg-[#6D9773] hover:bg-opacity-90 text-white rounded-lg shadow-sm font-medium transition-all flex items-center justify-center">
-                <svg className="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                Contact Client
-              </button>
+              <div className="mt-6 space-y-3">
+                <Link 
+                  to={`/profile/public/${job.clientId}`}
+                  className="w-full py-2 px-4 bg-[#6D9773] hover:bg-opacity-90 text-white rounded-lg shadow-sm font-medium transition-all flex items-center justify-center"
+                >
+                  <svg className="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  View Profile
+                </Link>
+                <Link 
+                  to={`/messages/new?userId=${job.clientId}&jobId=${job._id}`}
+                  className="w-full py-2 px-4 bg-white border border-[#6D9773] text-[#6D9773] hover:bg-gray-50 rounded-lg font-medium transition-all flex items-center justify-center"
+                >
+                  <svg className="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Message
+                </Link>
+              </div>
             </div>
             
             {/* Similar Jobs Card */}

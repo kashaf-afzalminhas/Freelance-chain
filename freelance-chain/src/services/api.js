@@ -84,28 +84,46 @@ export const markMessageAsRead = (messageId) =>
 //export const getPublicUserProfile = (userId) => api.get(/profile/public/${userId});
 
 
-const BASE_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
-const authHeaders = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
 
-// Helper function to get token
-const getToken = () => localStorage.getItem('authToken');
+// Update the authHeaders function
+const authHeaders = () => {
+  const token = localStorage.getItem('authToken');
+  return {
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  };
+};
 
-export const getUserProfile = () => 
-  axios.get(`${BASE_URL}/profile`, authHeaders(getToken()));
+// Update the profile-related API calls to match backend routes
+export const getUserProfile = () => api.get('/profile');
 
-export const updateUserProfile = (data) => 
-  axios.put(`${BASE_URL}/profile`, data, authHeaders(getToken()));
+export const updateUserProfile = (data) => {
+  console.log('Updating profile with data:', data);
+  return api.put('/profile', data);
+};
 
 export const uploadProfileImage = (file) => {
   const formData = new FormData();
   formData.append('profileImage', file);
-  return axios.post(`${BASE_URL}/profile/image`, formData, authHeaders(getToken()));
+  return api.post('/profile/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }).then(response => {
+    // Ensure we return the image URL in the expected format
+    return {
+      data: {
+        profileImage: response.data.data.profileImage
+      }
+    };
+  });
 };
 
-export const getPublicUserProfile = (userId) => 
-  axios.get(`${BASE_URL}/profile/public/${userId}`);
+export const removeProfileImage = () => api.delete('/profile/image');
+
+export const getPublicUserProfile = (userId) => api.get(`/profile/public/${userId}`);
 
 //projects 
 export const projectService = {
@@ -282,6 +300,17 @@ export const bidService = {
       return response.data;
     } catch (error) {
       console.error('Update bid error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Update bid status
+  updateBidStatus: async (bidId, { status }) => {
+    try {
+      const response = await api.put(`/bids/${bidId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('Update bid status error:', error);
       throw error.response?.data || error.message;
     }
   },

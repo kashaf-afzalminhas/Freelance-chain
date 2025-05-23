@@ -28,8 +28,9 @@ const AuthProvider = ({ children }) => {
 
         const response = await fetch('http://localhost:5000/auth/current-user', {
           headers: {
-            Authorization: `Bearer ${token}`,
-          },
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
         });
 
         if (!response.ok) {

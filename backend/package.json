@@ -34,7 +34,8 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "uuid": "^11.1.0",
-    "web3": "^1.10.4"
+    "web3": "^1.10.4",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "chai-http": "^5.1.1",

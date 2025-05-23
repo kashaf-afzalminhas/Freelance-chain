@@ -4,7 +4,8 @@ const {
   updateUserProfile,
   uploadProfileImage,
   getUserPublicProfile,
-  validateProfileUpdate
+  validateProfileUpdate,
+  removeProfileImage
 } = require('../controllers/profileController');
 
 const auth = require('../middleware/auth');
@@ -20,6 +21,9 @@ router.put('/', auth, validateProfileUpdate, updateUserProfile);
 
 // Upload profile image
 router.post('/upload', auth, upload.single('profileImage'), uploadProfileImage);
+
+// Remove profile image
+router.delete('/image', auth, removeProfileImage);
 
 // Get public profile by ID
 router.get('/public/:id', getUserPublicProfile);

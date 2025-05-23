@@ -42,6 +42,7 @@ import PublicProfilePage from "./components/Client/Pages/PublicProfilePage";
 import EditProfilePage from "./components/Client/Pages/EditProfilePage";
 import SavedJobsPage from "./components/Freelancer/Pages/SavedJobsPage";
 import BidDetails from "./components/Client/Pages/BidDetails";
+import ProfileErrorBoundary from './components/ErrorBoundary';
 
 const queryClient = new QueryClient();
 
@@ -86,9 +87,31 @@ const App = () => {
                     <Route path="/contracts" element={<ContractsList />} />
                     <Route path="/contracts/:contractId" element={<ContractView/>} />
                     <Route path="/messages" element={<Index />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/profile/public/:userId" element={<PublicProfilePage />} />
-                    <Route path="/profile/edit" element={<EditProfilePage/>} />
+                    <Route path="/messages/new" element={<Index />} />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProfileErrorBoundary>
+                          <Profile />
+                        </ProfileErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/profile/public/:userId"
+                      element={
+                        <ProfileErrorBoundary>
+                          <PublicProfilePage />
+                        </ProfileErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/profile/edit"
+                      element={
+                        <ProfileErrorBoundary>
+                          <EditProfilePage />
+                        </ProfileErrorBoundary>
+                      }
+                    />
                     <Route path="/bids/:bidId" element={<BidDetails />} />
                   </Route>
                 </Routes>
