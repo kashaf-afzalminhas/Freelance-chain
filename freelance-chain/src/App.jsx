@@ -49,9 +49,9 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Tooltip.Provider>
-        <BrowserRouter>
-          <AuthProvider>
-            <NotificationProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <BrowserRouter>
               <ContractProvider>
                 <Web3Provider>
                   {/* Notification systems */}
@@ -125,9 +125,9 @@ const App = () => {
                   </Routes>
                 </Web3Provider>
               </ContractProvider>
-            </NotificationProvider>
-          </AuthProvider>
-        </BrowserRouter>
+            </BrowserRouter>
+          </NotificationProvider>
+        </AuthProvider>
       </Tooltip.Provider>
     </QueryClientProvider>
   );

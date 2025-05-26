@@ -354,7 +354,16 @@ export const jobService = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  }
+  },
+  // Delete a job
+  deleteJob: async (id) => {
+    try {
+      const response = await api.delete(`/jobs/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };
 
 // Notification settings

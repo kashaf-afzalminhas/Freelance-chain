@@ -25,4 +25,7 @@ router.post('/:jobId/save', auth, jobController.saveJob);
 router.post('/:jobId/unsave', auth, jobController.unsaveJob);
 router.get('/saved', auth, jobController.getSavedJobs);
 
+// Delete a job
+router.delete('/:id', auth, jobController.deleteJob);
+
 module.exports = router;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { jobService, bidService } from '../../../services/api';
 import { contractService } from '../../../services/ContractService'; // Make sure the filename matches exactly
+import { toast } from 'react-toastify'; // If using react-toastify for feedback
 
 const MyJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -92,6 +93,51 @@ const handleAcceptBid = async (bidId, jobId) => {
     navigate(`/messages?userId=${freelancerId}`);
   };
 
+  const handleDeleteJob = async (jobId) => {
+    try {
+      // Show confirmation dialog
+      if (!window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+        return;
+      }
+
+      // Show loading toast
+      const toastId = toast.loading('Deleting job...', {
+        position: "top-right",
+        autoClose: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+
+      // Delete the job
+      await jobService.deleteJob(jobId);
+      
+      // Update local state
+      setJobs(jobs.filter(job => job._id !== jobId));
+
+      // Update toast to success
+      toast.update(toastId, {
+        render: "Job deleted successfully!",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
+        closeOnClick: true,
+      });
+    } catch (err) {
+      // Show error toast
+      toast.error(err.response?.data?.message || 'Failed to delete job. Please try again.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      console.error('Error deleting job:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -151,9 +197,17 @@ const handleAcceptBid = async (bidId, jobId) => {
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-xl font-bold text-secondary">{job.title}</h2>
-                  <span className="px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-full text-sm font-medium">
-                    Active
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-full text-sm font-medium">
+                      Active
+                    </span>
+                    <button
+                      onClick={() => handleDeleteJob(job._id)}
+                      className="ml-2 px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 
                 <p className="text-gray-600 mb-6">{job.description}</p>
