@@ -1,6 +1,6 @@
 import React from "react";
 
-const JobPostConfirmation = ({ jobData, onSubmit }) => {
+const JobPostConfirmation = ({ jobData, onSubmit, error, isSubmitting }) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-md w-full max-w-md md:max-w-lg">
@@ -43,13 +43,23 @@ const JobPostConfirmation = ({ jobData, onSubmit }) => {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-3">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+
         {/* Post Button */}
         <div className="mt-8">
           <button
             onClick={onSubmit}
-            className="w-full bg-[#6D9773] text-white py-3 px-6 rounded-lg font-semibold text-base sm:text-lg shadow-md hover:bg-[#5A8663] transition font-butler focus:outline-none focus:ring-2 focus:ring-[#6D9773] focus:ring-opacity-50"
+            disabled={isSubmitting}
+            className={`w-full ${
+              isSubmitting ? "bg-gray-400" : "bg-[#6D9773] hover:bg-[#5A8663]"
+            } text-white py-3 px-6 rounded-lg font-semibold text-base sm:text-lg shadow-md transition font-butler focus:outline-none focus:ring-2 focus:ring-[#6D9773] focus:ring-opacity-50`}
           >
-            Post Job
+            {isSubmitting ? "Posting..." : "Post Job"}
           </button>
         </div>
       </div>

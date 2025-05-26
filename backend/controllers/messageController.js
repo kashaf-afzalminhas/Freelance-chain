@@ -1,5 +1,6 @@
 const Message = require("../models/message");
 const Conversation = require("../models/Conversation");
+const notificationService = require('../services/notificationService');
 
 exports.sendMessage = async (req, res) => {
   const { conversationId, senderId, text } = req.body;
@@ -28,6 +29,19 @@ exports.sendMessage = async (req, res) => {
       lastMessage: text,
       updatedAt: new Date(),
     });
+
+    // Get receiver ID (the other participant)
+    const receiverId = conversation.participants.find(id => id.toString() !== senderId);
+
+    // Create notification for receiver
+    await notificationService.notify(
+      receiverId,
+      'message',
+      text,
+      `/messages/${conversationId}`,
+      req.app.get('io'),
+      senderId
+    );
 
     res.status(201).json(message);
   } catch (err) {

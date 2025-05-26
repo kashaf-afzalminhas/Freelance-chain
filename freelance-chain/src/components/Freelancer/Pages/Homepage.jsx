@@ -395,7 +395,7 @@ const Homepage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f8f9fa] to-white">
-        <Navbar/>
+     
       {/* Hero Section */}
       <section className="relative bg-gradient-to-r from-[#0C3B2E] to-[#6D9773] text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -620,7 +620,7 @@ const Homepage = () => {
           </div>
         </div>
       </section>
-      <Footer/>
+      
     </div>
 
   );

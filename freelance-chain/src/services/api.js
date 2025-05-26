@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 const API_URL = 'http://localhost:5000';
-
-const api = axios.create({
+export const api = axios.create({  // Export the api object as a named export
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -11,7 +10,7 @@ const api = axios.create({
 
 // Add token to requests if it exists
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
+const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -227,3 +226,139 @@ export const projectService = {
     }
   },
 };
+
+export const bidService = {
+  submitBid: async (bidData) => {
+    try {
+      // Log the complete bid data
+      console.log('Submitting bid with data:', JSON.stringify(bidData, null, 2));
+      
+      // Log the current token
+      const token = localStorage.getItem('token');
+      console.log('Current auth token:', token);
+
+      const response = await api.post('/bids/submit', bidData);
+      console.log('Bid submission response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Submit bid error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        console.error('Error status:', error.response.status);
+        console.error('Error headers:', error.response.headers);
+        throw error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  // Get bids for a specific job
+  getBidsForJob: async (jobId) => {
+    try {
+      const response = await api.get(`/bids/job/${jobId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get bids error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Get bids submitted by current user
+  getMyBids: async () => {
+    try {
+      const response = await api.get('/bids/my-bids');
+      return response.data; // Ensure this is an array
+    } catch (error) {
+      console.error('Get my bids error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+  // Update a bid
+  updateBid: async (bidId, bidData) => {
+    try {
+      const response = await api.put(`/bids/${bidId}`, bidData);
+      return response.data;
+    } catch (error) {
+      console.error('Update bid error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+  // Withdraw a bid
+  withdrawBid: async (bidId) => {
+    try {
+      const response = await api.delete(`/bids/${bidId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Withdraw bid error:', error);
+      throw error.response?.data || error.message;
+    }
+  },
+  updateBidStatus: async (bidId, statusData) => {
+    try {
+      const response = await api.put(`/bids/${bidId}/status`, statusData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  }
+};
+export const jobService = {
+  // Get all jobs
+  getJobs: async () => {
+    try {
+      const response = await api.get('/jobs');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+  saveJob: async (id) => api.post(`/jobs/${id}/save`),
+  unsaveJob: async (id) => api.post(`/jobs/${id}/unsave`),
+  // Get jobs posted by current user
+  createJob: async (jobData) => {
+    try {
+      const response = await api.post('/jobs', jobData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+  getMyJobs: async () => {
+    try {
+      const response = await api.get('/jobs/my-jobs');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching my jobs:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+      throw error.response?.data || error.message;
+    }
+  },
+  // Update job status
+  updateJobStatus: async (id, status) => {
+    try {
+      const response = await api.put(`/jobs/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Submit a proposal (if needed)
+  submitProposal: async (jobId, proposalData) => {
+    try {
+      const response = await api.post(`/jobs/${jobId}/proposals`, proposalData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  }
+};
+
+// Notification settings
+export const updateNotificationSettings = async (settings) => {
+  return api.patch('/users/me/notification-settings', { notificationSettings: settings });
+};
+

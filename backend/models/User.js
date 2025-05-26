@@ -16,7 +16,17 @@ const UserSchema = new mongoose.Schema({
     savedJobs: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job'
-      }]// General ratings field
+      }],// General ratings field
+    notificationSettings: {
+        receiveEmail: {
+            type: Boolean,
+            default: true
+        },
+        receivePush: {
+            type: Boolean,
+            default: true
+        }
+    }
 });
 
 module.exports = mongoose.model('User', UserSchema);

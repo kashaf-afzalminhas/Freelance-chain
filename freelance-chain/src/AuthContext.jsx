@@ -1,7 +1,16 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { initSocket, getSocket, disconnectSocket } from './services/socket';
 
 export const AuthContext = createContext();
+
+// Add useAuth hook
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);

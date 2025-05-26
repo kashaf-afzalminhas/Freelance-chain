@@ -5,10 +5,11 @@ require('dotenv').config();
 const path = require('path');
 const http = require('http');
 const Web3 = require('web3');
-const setupSocket = require('./config/socket');
+const { initializeSocket } = require('./socket');
 const bidRoutes = require('./routes/bidRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const workRoutes = require('./routes/workRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,7 +24,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 // Make Web3 available to routes
@@ -35,7 +38,7 @@ app.use((req, res, next) => {
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-<<<<<<< HEAD
+
 // Add request logging middleware
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -44,10 +47,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// MongoDB connection
-=======
-// Database connection
->>>>>>> origin/kashaf
+
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -77,6 +77,7 @@ app.use('/profile', require('./routes/profile'));
 app.use('/bids', bidRoutes);
 app.use('/contracts', contractRoutes);
 app.use('/work', workRoutes);
+app.use('/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -95,8 +96,11 @@ app.use((req, res) => {
     });
 });
 
-// Socket.IO setup
-setupSocket(server);
+// Initialize Socket.IO
+const io = initializeSocket(server);
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Server startup
 const PORT = process.env.PORT || 5000;

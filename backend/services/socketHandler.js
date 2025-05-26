@@ -1,119 +1,172 @@
-// const Message = require("../models/message");
-// const Conversation = require("../models/Conversation");
-
-// const users = new Map(); // userId => socketId
-
-// const socketHandler = (io, socket) => {
-//   // Save user connection
-//   socket.on("join", (userId) => {
-//     users.set(userId, socket.id);
-//     console.log(`User ${userId} connected: ${socket.id}`);
-//   });
-
-//   // Send message event
-//   socket.on("sendMessage", async ({ senderId, receiverId, text, conversationId }) => {
-//     try {
-//       const newMessage = new Message({
-//         senderId,
-//         text,
-//         conversationId,
-//       });
-
-//       const savedMessage = await newMessage.save();
-
-//       // Update conversation's last message
-//       await Conversation.findByIdAndUpdate(conversationId, {
-//         lastMessage: text,
-//         updatedAt: new Date(),
-//       });
-
-//       // Emit to receiver if online
-//       const receiverSocketId = users.get(receiverId);
-//       if (receiverSocketId) {
-//         io.to(receiverSocketId).emit("getMessage", {
-//           ...savedMessage.toObject(),
-//           isReceiver: true
-//         });
-//       }
-
-//       // Emit to sender with different flag
-//       const senderSocketId = users.get(senderId);
-//       if (senderSocketId) {
-//         io.to(senderSocketId).emit("getMessage", {
-//           ...savedMessage.toObject(),
-//           isSender: true
-//         });
-//       }
-//     } catch (error) {
-//       console.error("Error saving message:", error);
-//     }
-//   });
-
-//   // Disconnect user
-//   socket.on("disconnect", () => {
-//     for (let [userId, socketId] of users.entries()) {
-//       if (socketId === socket.id) {
-//         users.delete(userId);
-//         console.log(`User ${userId} disconnected`);
-//         break;
-//       }
-//     }
-//   });
-// };
-
-// module.exports = socketHandler;
-
-const Message = require("../models/message");
-const Conversation = require("../models/Conversation");
-
-const users = new Map(); // userId => socketId
+const notificationService = require('./notificationService');
+const User = require('../models/User');
 
 const socketHandler = (io, socket) => {
-  // Save user connection
-  socket.on("join", (userId) => {
-    users.set(userId, socket.id);
-    console.log(`User ${userId} connected: ${socket.id}`);
-  });
-
-  // Send message event
-  socket.on("sendMessage", async ({ senderId, receiverId, text, conversationId }) => {
+  // Handle user connection
+  socket.on('user:connect', async (userId) => {
     try {
-      // Emit to receiver if online
-      const receiverSocketId = users.get(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("getMessage", {
-          conversationId,
-          senderId,
-          text,
-          createdAt: new Date(),
-          isReceiver: true
-        });
-      }
-
-      // Emit to sender with different flag
-      const senderSocketId = users.get(senderId);
-      if (senderSocketId) {
-        io.to(senderSocketId).emit("getMessage", {
-          conversationId,
-          senderId,
-          text,
-          createdAt: new Date(),
-          isSender: true
-        });
-      }
+      // Add user to online users
+      notificationService.addOnlineUser(userId, socket.id);
+      
+      // Join user's personal room
+      socket.join(userId);
+      
+      console.log(`User ${userId} connected with socket ${socket.id}`);
     } catch (error) {
-      console.error("Error handling message:", error);
+      console.error('Error in user:connect:', error);
     }
   });
 
-  // Disconnect user
-  socket.on("disconnect", () => {
-    for (let [userId, socketId] of users.entries()) {
-      if (socketId === socket.id) {
-        users.delete(userId);
-        console.log(`User ${userId} disconnected`);
-        break;
+  // Handle user disconnection
+  socket.on('disconnect', () => {
+    try {
+      // Find and remove user from online users
+      for (const [userId, socketId] of notificationService.onlineUsers.entries()) {
+        if (socketId === socket.id) {
+          notificationService.removeOnlineUser(userId);
+          console.log(`User ${userId} disconnected`);
+          break;
+        }
       }
+    } catch (error) {
+      console.error('Error in disconnect:', error);
+    }
+  });
+
+  // Handle new message
+  socket.on('message:new', async (data) => {
+    try {
+      const { senderId, receiverId, message } = data;
+      
+      // Emit to receiver if online
+      const receiverSocketId = notificationService.getUserSocketId(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('message:received', {
+          senderId,
+          message
+        });
+      }
+
+      // Create notification
+      await notificationService.notify(
+        receiverId,
+        'message',
+        message,
+        `/messages/${senderId}`,
+        io,
+        senderId
+      );
+    } catch (error) {
+      console.error('Error in message:new:', error);
+    }
+  });
+
+  // Handle new bid
+  socket.on('bid:new', async (data) => {
+    try {
+      const { jobId, freelancerId, clientId, bidAmount } = data;
+      
+      // Emit to client if online
+      const clientSocketId = notificationService.getUserSocketId(clientId);
+      if (clientSocketId) {
+        io.to(clientSocketId).emit('bid:received', {
+          jobId,
+          freelancerId,
+          bidAmount
+        });
+      }
+
+      // Create notification
+      await notificationService.notify(
+        clientId,
+        'bid',
+        `New bid of $${bidAmount} received for your job`,
+        `/jobs/${jobId}`,
+        io
+      );
+    } catch (error) {
+      console.error('Error in bid:new:', error);
+    }
+  });
+
+  // Handle job hired
+  socket.on('job:hired', async (data) => {
+    try {
+      const { jobId, freelancerId, clientId } = data;
+      
+      // Emit to freelancer if online
+      const freelancerSocketId = notificationService.getUserSocketId(freelancerId);
+      if (freelancerSocketId) {
+        io.to(freelancerSocketId).emit('job:hired:received', {
+          jobId,
+          clientId
+        });
+      }
+
+      // Create notification
+      await notificationService.notify(
+        freelancerId,
+        'job_hired',
+        'You have been hired for a job!',
+        `/jobs/${jobId}`,
+        io
+      );
+    } catch (error) {
+      console.error('Error in job:hired:', error);
+    }
+  });
+
+  // Handle work submission
+  socket.on('work:submitted', async (data) => {
+    try {
+      const { jobId, freelancerId, clientId } = data;
+      
+      // Emit to client if online
+      const clientSocketId = notificationService.getUserSocketId(clientId);
+      if (clientSocketId) {
+        io.to(clientSocketId).emit('work:submitted:received', {
+          jobId,
+          freelancerId
+        });
+      }
+
+      // Create notification
+      await notificationService.notify(
+        clientId,
+        'work_submitted',
+        'Work has been submitted for your review',
+        `/jobs/${jobId}`,
+        io
+      );
+    } catch (error) {
+      console.error('Error in work:submitted:', error);
+    }
+  });
+
+  // Handle work approval
+  socket.on('work:approved', async (data) => {
+    try {
+      const { jobId, freelancerId, clientId } = data;
+      
+      // Emit to freelancer if online
+      const freelancerSocketId = notificationService.getUserSocketId(freelancerId);
+      if (freelancerSocketId) {
+        io.to(freelancerSocketId).emit('work:approved:received', {
+          jobId,
+          clientId
+        });
+      }
+
+      // Create notification
+      await notificationService.notify(
+        freelancerId,
+        'work_approved',
+        'Your work has been approved!',
+        `/jobs/${jobId}`,
+        io
+      );
+    } catch (error) {
+      console.error('Error in work:approved:', error);
     }
   });
 };
