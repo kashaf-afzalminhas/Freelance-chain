@@ -13,10 +13,7 @@ const CreateProject = () => {
     category: '',
     description: '',
     price: '',
-    requirements: [''],
-    images: [],
-    clientInformation: '',
-    approach: ''
+    media: []
   });
 
   const categories = [
@@ -36,34 +33,10 @@ const CreateProject = () => {
     }));
   };
 
-  const handleRequirementChange = (index, value) => {
-    const newRequirements = [...projectData.requirements];
-    newRequirements[index] = value;
-    setProjectData(prev => ({
-      ...prev,
-      requirements: newRequirements
-    }));
-  };
-
-  const addRequirement = () => {
-    setProjectData(prev => ({
-      ...prev,
-      requirements: [...prev.requirements, '']
-    }));
-  };
-
-  const removeRequirement = (index) => {
-    const newRequirements = projectData.requirements.filter((_, i) => i !== index);
-    setProjectData(prev => ({
-      ...prev,
-      requirements: newRequirements
-    }));
-  };
-
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    if (files.length > 5) {
-      setError('You can only upload up to 5 images');
+    if (files.length > 10) {
+      setError('You can only upload up to 10 files');
       return;
     }
 
@@ -71,7 +44,7 @@ const CreateProject = () => {
     const previewUrls = files.map(file => URL.createObjectURL(file));
     setProjectData(prev => ({
       ...prev,
-      images: previewUrls
+      media: previewUrls
     }));
   };
 
@@ -86,15 +59,12 @@ const CreateProject = () => {
       formData.append('category', projectData.category);
       formData.append('description', projectData.description);
       formData.append('price', projectData.price);
-      projectData.requirements.forEach(req => {
-        if (req.trim()) formData.append('requirements', req);
-      });
 
-      // Add images to FormData
-      const imageInput = document.querySelector('input[type="file"]');
-      if (imageInput.files.length > 0) {
-        Array.from(imageInput.files).forEach(file => {
-          formData.append('images', file);
+      // Add media files to FormData
+      const mediaInput = document.querySelector('input[type="file"]');
+      if (mediaInput.files.length > 0) {
+        Array.from(mediaInput.files).forEach(file => {
+          formData.append('media', file);
         });
       }
 
@@ -185,93 +155,29 @@ const CreateProject = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Requirements
-              </label>
-              {projectData.requirements.map((req, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={req}
-                    onChange={(e) => handleRequirementChange(index, e.target.value)}
-                    placeholder="Enter a requirement"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeRequirement(index)}
-                    className="px-3 py-2 text-red-500 hover:text-red-700"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addRequirement}
-                className="mt-2 text-sm text-green-600 hover:text-green-800"
-              >
-                + Add Requirement
-              </button>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Client Information Needed
-              </label>
-              <textarea
-                name="clientInformation"
-                value={projectData.clientInformation}
-                onChange={handleInputChange}
-                placeholder="What information do you need from the client?"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent h-32"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Your Approach
-              </label>
-              <textarea
-                name="approach"
-                value={projectData.approach}
-                onChange={handleInputChange}
-                placeholder="Describe your approach to completing this project"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent h-32"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Project Images (Optional)
+                Project Media
               </label>
               <input
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/*,video/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={handleImageUpload}
                 className="w-full"
               />
-              {projectData.images.length > 0 && (
+              {projectData.media.length > 0 && (
                 <div className="mt-4 grid grid-cols-3 gap-4">
-                  {projectData.images.map((url, index) => (
+                  {projectData.media.map((url, index) => (
                     <div key={index} className="relative">
                       <img
                         src={url}
-                        alt={`Project image ${index + 1}`}
+                        alt={`Project media ${index + 1}`}
                         className="w-full h-32 object-cover rounded-lg"
                       />
                       <button
                         type="button"
                         onClick={() => {
-                          const newImages = projectData.images.filter((_, i) => i !== index);
-                          setProjectData(prev => ({ ...prev, images: newImages }));
+                          const newMedia = projectData.media.filter((_, i) => i !== index);
+                          setProjectData(prev => ({ ...prev, media: newMedia }));
                         }}
                         className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
                       >
@@ -299,7 +205,7 @@ const CreateProject = () => {
           {/* Progress Steps */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
-              {[1, 2, 3].map((s) => (
+              {[1, 2].map((s) => (
                 <React.Fragment key={s}>
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full ${
@@ -308,7 +214,7 @@ const CreateProject = () => {
                   >
                     {s}
                   </div>
-                  {s < 3 && (
+                  {s < 2 && (
                     <div
                       className={`flex-1 h-1 ${
                         step > s ? 'bg-green-500' : 'bg-gray-200'
@@ -321,7 +227,6 @@ const CreateProject = () => {
             <div className="flex justify-between mt-2 text-sm text-gray-600">
               <span>Basic Info</span>
               <span>Details</span>
-              <span>Additional Info</span>
             </div>
           </div>
 
@@ -350,7 +255,7 @@ const CreateProject = () => {
                 <div />
               )}
 
-              {step < 3 ? (
+              {step < 2 ? (
                 <button
                   type="button"
                   onClick={() => setStep(step + 1)}
@@ -359,19 +264,19 @@ const CreateProject = () => {
                   Next
                 </button>
               ) : (
-          <button
+                <button
                   type="submit"
                   disabled={loading}
                   className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
-          >
+                >
                   {loading ? 'Creating...' : 'Create Project'}
-          </button>
+                </button>
               )}
-        </div>
+            </div>
           </form>
         </div>
       </div>
-      </div>
+    </div>
   );
 };
 

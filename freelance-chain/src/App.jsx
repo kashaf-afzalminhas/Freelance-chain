@@ -7,6 +7,8 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 
 import AuthProvider, { AuthContext } from "./AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { Web3Provider } from "./context/Web3Context";
+import { ContractProvider } from "./context/ContractContext";
 
 import './index.css';
 import './App.css';
@@ -18,6 +20,7 @@ import RoleSelection from "./components/RoleSelection";
 import JobListPage from "./components/Freelancer/Pages/JobListPage";
 import CreateProject from "./components/Freelancer/Pages/CreateProject";
 import EditProject from "./components/Freelancer/Pages/EditProject";
+import ProjectDetails from "./components/Freelancer/Pages/ProjectDetails";
 import ProjectOverview from './components/Freelancer/Cards/projectOverview';
 import ProjectDescription from "./components/Freelancer/Cards/projectDiscription";
 import ProjectGallery from "./components/Freelancer/Cards/projectGallery";
@@ -31,33 +34,41 @@ import CreateJob from "./components/Client/Pages/JobCreationWizard";
 import Index from "./components/Client/Pages/Chat";
 import MyJobs from "./components/Client/Pages/MyJobs";
 import BidForm from "./components/Freelancer/Pages/BidForm";
-import { Web3Provider } from "./context/Web3Context";
 import MyProposals from "./components/Freelancer/Pages/MyProposals";
 import Layout from './components/Layout'
 import ContractView from "./components/SmartContracts/ContractView";
-import {ContractProvider} from "./context/ContractContext";
+import ContractsList from "./components/SmartContracts/ContractsList";
 import Profile from "./components/Client/Pages/Profile";
 import PublicProfilePage from "./components/Client/Pages/PublicProfilePage";
 import EditProfilePage from "./components/Client/Pages/EditProfilePage";
+import SavedJobsPage from "./components/Freelancer/Pages/SavedJobsPage";
+import BidDetails from "./components/Client/Pages/BidDetails";
 import ProfileErrorBoundary from './components/ErrorBoundary';
 import NotificationPage from "./components/Client/Pages/Notification";
 import NotificationSettings from "./components/Client/Pages/NotificationSettings";
+import AdminRoutes from './components/Admin/AdminRoutes';
 
 const queryClient = new QueryClient();
 
 const App = () => {
+  const { currentUser, chatWithUser } = useContext(AuthContext);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Tooltip.Provider>
         <AuthProvider>
           <NotificationProvider>
-            <BrowserRouter>
-              <ContractProvider>
-                <Web3Provider>
+            <Web3Provider>
+              <BrowserRouter>
+                <ContractProvider>
                   {/* Notification systems */}
                   <HotToaster position="top-right" />
                   <SonnerToaster richColors closeButton position="bottom-right" />
                   <Routes>
+                    {/* Admin Routes */}
+                    <Route path="/admin/*" element={<AdminRoutes />} />
+                    
+                    {/* Existing Routes */}
                     <Route element={<Layout />}>
                       <Route path="/" element={<Homepage />} />
                       <Route path="/signin" element={<SignIn />} />
@@ -66,6 +77,7 @@ const App = () => {
                       <Route path="/jobs" element={<JobListPage />} />
                       <Route path="/createproject" element={<CreateProject />} />
                       <Route path="/editproject/:id" element={<EditProject />} />
+                      <Route path="/projects/:id" element={<ProjectDetails />} />
                       <Route path="/projectOverview" element={<ProjectOverview />} />
                       <Route path="/projectDiscription" element={<ProjectDescription />} />
                       <Route path="/projectGallery" element={<ProjectGallery />} />
@@ -77,10 +89,14 @@ const App = () => {
                       <Route path="/jobs/:id" element={<JobDetail />} />
                       <Route path="/create-job" element={<CreateJob />} />
                       <Route path="/my-jobs" element={<MyJobs />} />
+                      <Route path="/saved-jobs" element={<SavedJobsPage />} />
                       <Route path="/bid-form" element={<BidForm />} />
                       <Route path="/myproposals" element={<MyProposals />} />
-                      <Route path="/contracts" element={<ContractView />} />
+                      <Route path="/contracts" element={<ContractsList />} />
+                      <Route path="/contracts/:contractId" element={<ContractView />} />
                       <Route path="/messages" element={<Index />} />
+                      <Route path="/messages/new" element={<Index />} />
+                      <Route path="/bids/:bidId" element={<BidDetails />} />
                       <Route
                         path="/profile"
                         element={
@@ -123,9 +139,9 @@ const App = () => {
                       />
                     </Route>
                   </Routes>
-                </Web3Provider>
-              </ContractProvider>
-            </BrowserRouter>
+                </ContractProvider>
+              </BrowserRouter>
+            </Web3Provider>
           </NotificationProvider>
         </AuthProvider>
       </Tooltip.Provider>

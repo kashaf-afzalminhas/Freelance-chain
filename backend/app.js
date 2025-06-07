@@ -10,23 +10,36 @@ const bidRoutes = require('./routes/bidRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const workRoutes = require('./routes/workRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+const bidsDir = path.join(uploadsDir, 'bids');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(bidsDir)) {
+  fs.mkdirSync(bidsDir, { recursive: true });
+}
+
 // Initialize Web3 with Ganache
-const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:7545';
+const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:8545';
 const web3 = new Web3(new Web3.providers.HttpProvider(ganacheUrl));
 
 // Middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     exposedHeaders: ['Content-Range', 'X-Content-Range']
+   
 }));
 
 // Make Web3 available to routes
@@ -40,13 +53,39 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
 // Add request logging middleware
+// Request logging middleware for debugging
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
+// Static files - Serve uploads directory with proper headers
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Set proper content type based on file extension
+    const ext = path.extname(filePath).toLowerCase();
+    const contentTypes = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.mp4': 'video/mp4'
+    };
+    
+    if (contentTypes[ext]) {
+      res.set('Content-Type', contentTypes[ext]);
+    }
+    
+    // Allow cross-origin requests for files
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
+// Database connection
 
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -77,22 +116,44 @@ app.use('/profile', require('./routes/profile'));
 app.use('/bids', bidRoutes);
 app.use('/contracts', contractRoutes);
 app.use('/work', workRoutes);
+app.use('/saved-jobs', require('./routes/savedJobs'));
+
+// Admin routes - Mount at /api/admin
+app.use('/api/admin', require('./routes/adminRoutes'));
+
+// API route not found handler
+app.use('/api/*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'API endpoint not found'
+    });
+});
 app.use('/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error:', err);
+    console.error('Stack:', err.stack);
+    
+    // Handle specific errors
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({
+            success: false,
+            error: err.message
+        });
+    }
+    
+    if (err.name === 'UnauthorizedError') {
+        return res.status(401).json({
+            success: false,
+            error: 'Unauthorized access'
+        });
+    }
+    
+    // Default error
     res.status(500).json({
         success: false,
         error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-    });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Endpoint not found'
     });
 });
 

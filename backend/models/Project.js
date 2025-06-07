@@ -20,20 +20,15 @@ const projectSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
-  requirements: [{
-    type: String,
-    trim: true
-  }],
-  images: [{
-    data: {
-      type: String,
-      required: true
-    },
-    contentType: {
-      type: String,
-      required: true
+  media: [
+    {
+      url: { type: String, required: true },
+      type: { type: String, enum: ['image', 'video', 'pdf', 'document'], required: true },
+      name: { type: String, required: true },
+      size: { type: Number }, // Size in bytes
+      uploadedAt: { type: Date, default: Date.now }
     }
-  }],
+  ],
   status: {
     type: String,
     enum: ['active', 'completed', 'cancelled'],

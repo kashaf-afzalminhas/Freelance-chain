@@ -1,7 +1,10 @@
-import React from 'react';
-import { Clock, DollarSign, MapPin, Star, Briefcase, Heart, ThumbsDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, DollarSign,ThumbsDown, MapPin, Star, Briefcase, Heart, Bookmark } from 'lucide-react';
+import { api } from '../../../services/api';
+import { toast } from 'react-toastify';
 
 export default function JobCard({
+  _id,
   title,
   company,
   budget,
@@ -11,12 +14,53 @@ export default function JobCard({
   postedTime,
   experience,
 }) {
+  const [isSaved, setIsSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkIfSaved = async () => {
+      try {
+        const response = await api.get('/saved-jobs');
+        const savedJobs = response.data;
+        setIsSaved(savedJobs.some(job => job._id === _id));
+      } catch (error) {
+        console.error('Error checking saved status:', error);
+      }
+    };
+    checkIfSaved();
+  }, [_id]);
+
+  const toggleSave = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      if (isSaved) {
+        await api.delete(`/saved-jobs/${_id}`);
+        toast.success('Job removed from saved');
+      } else {
+        await api.post('/saved-jobs', { jobId: _id });
+        toast.success('Job saved successfully');
+      }
+      setIsSaved(!isSaved);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update saved status');
+      console.error('Error toggling save:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow relative">
       <div className="absolute top-4 right-4 flex gap-2">
-        <button className="text-gray-600 hover:text-red-600 transition">
-          <Heart className="w-5 h-5" />
+        <button 
+          onClick={toggleSave}
+          className={`${isSaved ? 'text-[#FFBA00]' : 'text-gray-600'} hover:text-[#FFBA00] transition`}
+          disabled={loading}
+        >
+          <Bookmark className="w-5 h-5" fill={isSaved ? '#FFBA00' : 'none'} />
         </button>
+    
         <button className="text-gray-600 hover:text-red-600 transition">
           <ThumbsDown className="w-5 h-5" />
         </button>

@@ -2,16 +2,23 @@ const express = require('express');
 const {
     createContract,
     getContract,
-    signContract
+    signContract,
+    getUserContracts
 } = require('../controllers/contractController');
-const auth = require('../middleware/auth'); // Keep using auth.js as is
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// Apply auth middleware directly (since it's the default export)
+// Create new contract
 router.post('/', auth, createContract);
-router.get('/', auth, getContract);
+
+// Get all user's contracts
+router.get('/user', auth, getUserContracts);
+
+// Get specific contract by ID
 router.get('/:id', auth, getContract);
+
+// Sign a contract
 router.post('/:id/sign', auth, signContract);
 
 module.exports = router;

@@ -56,8 +56,8 @@ const getOnlineUsers = () => {
 
 // Create and send notification
 const notify = async (userId, type, content, link, io, senderId = null) => {
+  let formattedContent = content;
   try {
-    let formattedContent = content;
     let sender = null;
     
     // If senderId is provided, get sender's information
@@ -85,7 +85,8 @@ const notify = async (userId, type, content, link, io, senderId = null) => {
             formattedContent = `${sender.name} approved your submitted work`;
             break;
           default:
-            formattedContent = content;
+            // For admin notifications (info, warning, error), content is already formatted
+            formattedContent = content; 
         }
       }
     }

@@ -18,6 +18,7 @@ const AuthProvider = ({ children }) => {
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -25,11 +26,12 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         setError(null);
         
-        const token = localStorage.getItem('authToken');
-        console.log('Token from localStorage:', token); // Debug log
+        const token = localStorage.getItem('token');
+        const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
+        setIsAdmin(storedIsAdmin);
 
         if (!token) {
-          console.warn('No authToken found in localStorage');
+          console.warn('No token found in localStorage');
           setCurrentUser(null);
           setIsLoading(false);
           return;
@@ -45,10 +47,12 @@ const AuthProvider = ({ children }) => {
         if (!response.ok) {
           if (response.status === 401) {
             // Token is invalid or expired
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
             localStorage.removeItem('user');
             localStorage.removeItem('userId');
+            localStorage.removeItem('isAdmin');
             setCurrentUser(null);
+            setIsAdmin(false);
             setError('Session expired. Please sign in again.');
           } else {
             throw new Error(`Failed to fetch current user: ${response.status}`);
@@ -60,8 +64,8 @@ const AuthProvider = ({ children }) => {
         console.log('Fetched Current User:', user);
         setCurrentUser(user);
 
-        // Initialize socket connection only if not already initialized
-        if (!isSocketInitialized && user._id) {
+        // Initialize socket connection only if not already initialized and not admin
+        if (!isSocketInitialized && user._id && !storedIsAdmin) {
           const socket = initSocket(user._id);
           setIsSocketInitialized(true);
 
@@ -83,6 +87,7 @@ const AuthProvider = ({ children }) => {
         console.error('Error fetching current user:', error);
         setError(error.message);
         setCurrentUser(null);
+        setIsAdmin(false);
       } finally {
         setIsLoading(false);
       }
@@ -98,7 +103,9 @@ const AuthProvider = ({ children }) => {
     setChatWithUser,
     isLoading,
     error,
-    isSocketInitialized
+    isSocketInitialized,
+    isAdmin,
+    setIsAdmin
   };
 
   return (

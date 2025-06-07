@@ -15,6 +15,7 @@ const initSocket = (server) => {
       console.log('Socket connected:', socket.id);
     });
 
+    
     socket.on('connect_error', (err) => {
       console.error('Connection error:', err);
     });

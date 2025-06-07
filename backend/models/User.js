@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     walletAddress: { type: String, unique: true, required: true },
     nonce: { type: String }, // For MetaMask login
-    role: { type: String, enum: ['client', 'freelancer'], default: null },
+    role: { type: String, enum: ['client', 'freelancer', 'admin'], default: null },
     name: { type: String },
     bio: { type: String }, // General bio field for all users
     portfolioLinks: {
@@ -16,17 +16,11 @@ const UserSchema = new mongoose.Schema({
     savedJobs: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job'
-      }],// General ratings field
-    notificationSettings: {
-        receiveEmail: {
-            type: Boolean,
-            default: true
-        },
-        receivePush: {
-            type: Boolean,
-            default: true
-        }
-    }
+    }],
+    averageRating: {
+        type: Number,
+        default: 0
+    }// General ratings field
 });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -21,9 +21,17 @@ router.put('/:id/status', auth, jobController.updateJobStatus);
 // Submit a proposal
 router.post('/:id/proposals', auth, jobController.submitProposal);
 
+// Delete a job
+router.delete('/:id', auth, jobController.deleteJob);
+
+// Update a job
+router.put('/:id', auth, jobController.updateJob);
+
 router.post('/:jobId/save', auth, jobController.saveJob);
 router.post('/:jobId/unsave', auth, jobController.unsaveJob);
 router.get('/saved', auth, jobController.getSavedJobs);
+// Add to jobs.js routes
+router.post('/:jobId/bids/:bidId/accept', auth, jobController.acceptBidAndCreateContract);
 
 // Delete a job
 router.delete('/:id', auth, jobController.deleteJob);

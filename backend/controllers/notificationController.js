@@ -18,7 +18,6 @@ exports.getNotifications = async (req, res) => {
         return notification;
       })
     );
-
     res.json({
       success: true,
       data: {

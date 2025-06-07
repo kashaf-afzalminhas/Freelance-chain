@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['message', 'bid', 'job_hired', 'contract_created', 'work_submitted', 'work_approved'],
+    enum: ['message', 'bid', 'job_hired', 'contract_created', 'work_submitted', 'work_approved', 'info', 'warning', 'error'],
     required: true
   },
   content: {

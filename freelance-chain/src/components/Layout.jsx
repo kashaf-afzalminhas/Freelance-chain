@@ -22,6 +22,8 @@ import Footer from '../components/Freelancer/Cards/footer';
 const Layout = () => {
   const location = useLocation();
 
+ 
+
   // List of routes where the footer should be hidden
   const hideFooterRoutes = ['/messages'];
   const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
@@ -32,6 +34,7 @@ const Layout = () => {
       <main className="main-content">
         <Outlet /> {/* This renders the matched child route */}
       </main>
+      {!shouldHideFooter && <Footer />}
       {!shouldHideFooter && <Footer />}
     </div>
   );

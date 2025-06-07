@@ -12,4 +12,5 @@ router.patch('/:notificationId/read', auth, notificationController.markAsRead);
 // Mark all notifications as read
 router.patch('/read-all', auth, notificationController.markAllAsRead);
 
+
 module.exports = router; 

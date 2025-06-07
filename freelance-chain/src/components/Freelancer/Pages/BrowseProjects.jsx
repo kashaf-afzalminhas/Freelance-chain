@@ -10,6 +10,8 @@ const BrowseProjects = () => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
+  const [hoveredProject, setHoveredProject] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState({});
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -64,6 +66,20 @@ const BrowseProjects = () => {
           return 0;
       }
     });
+
+  const nextSlide = (projectId) => {
+    setCurrentSlide(prev => ({
+      ...prev,
+      [projectId]: ((prev[projectId] || 0) + 1) % (projects.find(p => p._id === projectId)?.media?.length || 1)
+    }));
+  };
+
+  const prevSlide = (projectId) => {
+    setCurrentSlide(prev => ({
+      ...prev,
+      [projectId]: ((prev[projectId] || 0) - 1 + (projects.find(p => p._id === projectId)?.media?.length || 1)) % (projects.find(p => p._id === projectId)?.media?.length || 1)
+    }));
+  };
 
   if (loading) {
     return (
@@ -192,48 +208,86 @@ const BrowseProjects = () => {
               <div
                 key={project._id}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                onMouseEnter={() => setHoveredProject(project._id)}
+                onMouseLeave={() => setHoveredProject(null)}
               >
-                {/* Project Image */}
-                {project.images && project.images.length > 0 ? (
-                  <div className="h-48 overflow-hidden">
-                    <img
-                      src={`data:${project.images[0].contentType};base64,${project.images[0].data}`}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTQgMTZMMTAgMTBMMTYgMTZNMjAgMTZMMTYgMTJMMjAgOE0yMCAyMEg0VjRIMjBWMjBaIiBzdHJva2U9IiM5Q0E0QjkiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+';
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="h-48 bg-gray-100 flex items-center justify-center">
-                    <svg
-                      className="h-12 w-12 text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                )}
+                {/* Project Media Slider */}
+                <div className="relative h-48 overflow-hidden">
+                  {project.media && project.media.length > 0 ? (
+                    <>
+                      {project.media[currentSlide[project._id] || 0].type === 'image' ? (
+                        <img
+                          src={`${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${project.media[currentSlide[project._id] || 0].url}`}
+                          alt={project.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : project.media[currentSlide[project._id] || 0].type === 'video' ? (
+                        <video
+                          src={`${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${project.media[currentSlide[project._id] || 0].url}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                          <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                      {project.media.length > 1 && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              prevSlide(project._id);
+                            }}
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-75"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              nextSlide(project._id);
+                            }}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-1 rounded-full hover:bg-opacity-75"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+                            {project.media.map((_, index) => (
+                              <div
+                                key={index}
+                                className={`w-2 h-2 rounded-full ${
+                                  index === (currentSlide[project._id] || 0)
+                                    ? 'bg-white'
+                                    : 'bg-white bg-opacity-50'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <div className="h-full bg-gray-100 flex items-center justify-center">
+                      <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
 
                 <div className="p-6">
                   {/* Project Title and Status */}
                   <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800">
+                    <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
                       {project.title}
                     </h2>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        project.status
-                      )}`}
-                    >
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
                       {project.status}
                     </span>
                   </div>
@@ -259,22 +313,22 @@ const BrowseProjects = () => {
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <span className="font-medium mr-2">Posted:</span>
-                      <span>
-                        {new Date(project.createdAt).toLocaleDateString()}
-                      </span>
+                      <span>{new Date(project.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                     <Link
-                      to={`/project/${project._id}`}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      to={`/projects/${project._id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      View Details
+                      View Project
                     </Link>
                     <button
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       Apply Now
                     </button>

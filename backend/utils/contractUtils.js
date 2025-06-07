@@ -1,7 +1,5 @@
 const path = require('path');
-const { ethers } = require('ethers'); // Changed import syntax
-const contract = require('@truffle/contract');
-const Web3 = require('web3');
+const { ethers } = require('ethers');
 
 // Correct path to contract artifact
 const JobContractArtifact = require(path.join(
@@ -9,22 +7,27 @@ const JobContractArtifact = require(path.join(
   '../../contracts/build/contracts/JobContract.json'
 ));
 
-const GANACHE_URL = "http://127.0.0.1:7545";
-const web3 = new Web3(new Web3.providers.HttpProvider(GANACHE_URL));
-const provider = new ethers.providers.JsonRpcProvider(GANACHE_URL); // Corrected syntax
-const wallet = provider.getSigner(0); // Added account index
+const GANACHE_URL = "http://127.0.0.1:8545";
 
 class ContractUtils {
     constructor() {
+        this.provider = null;
+        this.wallet = null;
         this.contractInstance = null;
-        this.JobContract = contract(JobContractArtifact);
-        this.JobContract.setProvider(new Web3.providers.HttpProvider(GANACHE_URL));
     }
 
     async initialize() {
-        // Connect to Ganache
-        this.JobContract.setProvider(new Web3.providers.HttpProvider(GANACHE_URL));
-        return await this.JobContract.deployed();
+        try {
+            // Initialize provider and wallet
+            this.provider = new ethers.providers.JsonRpcProvider(GANACHE_URL);
+            this.wallet = this.provider.getSigner(0);
+            
+            console.log('Contract utilities initialized successfully');
+            return true;
+        } catch (err) {
+            console.error('Failed to initialize contract:', err);
+            throw new Error('Failed to connect to blockchain network. Please ensure Ganache is running.');
+        }
     }
 
     async deployContract(contractData) {
@@ -32,9 +35,10 @@ class ContractUtils {
             const factory = new ethers.ContractFactory(
                 JobContractArtifact.abi,
                 JobContractArtifact.bytecode,
-                wallet
+                this.wallet
             );
             
+            // Deploy the base contract
             const deployedContract = await factory.deploy();
             await deployedContract.deployTransaction.wait();
             
@@ -44,13 +48,17 @@ class ContractUtils {
             // Convert deadline to Unix timestamp
             const deadlineUnix = Math.floor(new Date(contractData.deadline).getTime() / 1000);
             
-            await deployedContract.createContract(
+            // Create the actual job contract
+            const tx = await deployedContract.createContract(
                 contractData.freelancerAddress,
                 bidAmountWei,
                 deadlineUnix,
                 contractData.jobTitle,
                 contractData.jobDescription
             );
+            await tx.wait();
+            
+            this.contractInstance = deployedContract;
             
             return {
                 address: deployedContract.address,
@@ -63,25 +71,39 @@ class ContractUtils {
     }
 
     async getContractState(contractAddress) {
-        if (!this.contractInstance) {
-            this.contractInstance = new ethers.Contract(
+        try {
+            const contract = new ethers.Contract(
                 contractAddress,
                 JobContractArtifact.abi,
-                wallet
+                this.wallet
             );
-        }
-        
-        try {
-            const contractData = await this.contractInstance.getContract(0);
+            
+            const contractData = await contract.getContract(0);
             return {
                 ...contractData,
-                // Convert wei back to ETH
                 bidAmount: ethers.utils.formatEther(contractData.bidAmount),
-                // Convert Unix timestamp to Date
-                deadline: new Date(contractData.deadline * 1000)
+                deadline: new Date(contractData.deadline.toNumber() * 1000)
             };
         } catch (err) {
             console.error('Error getting contract state:', err);
+            throw err;
+        }
+    }
+
+    async signContract(contractAddress, signerAddress) {
+        try {
+            const contract = new ethers.Contract(
+                contractAddress,
+                JobContractArtifact.abi,
+                this.wallet
+            );
+            
+            const tx = await contract.signContract(0);
+            await tx.wait();
+            
+            return true;
+        } catch (err) {
+            console.error('Error signing contract:', err);
             throw err;
         }
     }

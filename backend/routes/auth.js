@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Client = require('../models/Client');
 const Freelancer = require('../models/Freelancer');
 const auth = require('../middleware/auth');
+const { ADMIN_WALLET_ADDRESS } = require('../middleware/adminAuth');
 const crypto = require('crypto');
 const Web3 = require('web3');
 const router = express.Router();
@@ -21,11 +22,16 @@ router.post('/metamask/request', async (req, res) => {
     }
 
     try {
-        let user = await User.findOne({ walletAddress });
+        let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
 
         // If the user does not exist, create a new entry
         if (!user) {
-            user = new User({ walletAddress, nonce: generateNonce() });
+            user = new User({ 
+                walletAddress: walletAddress.toLowerCase(),
+                nonce: generateNonce(),
+                // Set role to admin if it's the admin wallet
+                role: walletAddress.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase() ? 'admin' : undefined
+            });
             await user.save();
         } else {
             // Update the nonce for security
@@ -47,7 +53,7 @@ router.post('/metamask/verify', async (req, res) => {
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     console.log('Request headers:', req.headers);
 
-    const { walletAddress, signature } = req.body;
+    const { walletAddress, signature, isAdmin } = req.body;
 
     // Validate request body
     if (!walletAddress || !signature) {
@@ -66,7 +72,7 @@ router.post('/metamask/verify', async (req, res) => {
 
     try {
         console.log('Looking up user with wallet:', walletAddress.toLowerCase());
-        const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+        let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
         
         if (!user) {
             console.log('User not found in database');
@@ -79,7 +85,8 @@ router.post('/metamask/verify', async (req, res) => {
         console.log('Found user:', {
             id: user._id,
             walletAddress: user.walletAddress,
-            hasNonce: !!user.nonce
+            hasNonce: !!user.nonce,
+            role: user.role
         });
 
         if (!user.nonce) {
@@ -116,8 +123,21 @@ router.post('/metamask/verify', async (req, res) => {
             });
         }
 
+        // Check if this is an admin login attempt
+        if (isAdmin && walletAddress.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
+            // Update user role to admin if not already
+            if (user.role !== 'admin') {
+                user.role = 'admin';
+                await user.save();
+            }
+        }
+
         // Generate JWT token
-        const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ 
+            userId: user._id, 
+            walletAddress: user.walletAddress,
+            role: user.role 
+        }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         console.log('Verification successful, generating response');
         // Return token and user data
@@ -172,6 +192,7 @@ router.post('/check-wallet', async (req, res) => {
       }
   
       // Create a new user
+      console.log('Attempting to create new user with walletAddress:', walletAddress);
       const user = new User({
         walletAddress,
         password, // In a real app, hash the password before saving
@@ -179,6 +200,7 @@ router.post('/check-wallet', async (req, res) => {
       });
   
       await user.save();
+      console.log('User successfully saved with ID:', user._id);
   
       // Generate JWT token
       const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -201,58 +223,39 @@ router.post('/check-wallet', async (req, res) => {
   });
 
 // Role Selection
-// router.post('/select-role', async (req, res) => {
-//     const { userId, role, name, extraData } = req.body;
-  
-//     try {
-//       // Find the user by userId
-//       const user = await User.findById(userId);
-//       if (!user) {
-//         return res.status(404).json({ message: 'User not found' });
-//       }
-  
-//       // Update the user's role and name
-//       user.role = role;
-//       user.name = name;
-//       await user.save();
-  
-//       // Create a Client or Freelancer profile based on the selected role
-//       if (role === 'client') {
-//         await Client.create({ userId: user._id, company: extraData.company });
-//       } else if (role === 'freelancer') {
-//         await Freelancer.create({
-//           userId: user._id,
-//           skills: extraData.skills,
-//           experience: extraData.experience,
-//         });
-//       }
-  
-//       res.status(200).json({ message: 'Role assigned successfully', user });
-//     } catch (error) {
-//       console.error('Role selection error', error);
-//       res.status(500).json({ message: 'Server error' });
-//     }
-//   });
-// Role Selection
 router.post('/select-role', async (req, res) => {
     const { userId, role, name, extraData } = req.body;
 
     try {
+        console.log('Attempting to select role for user ID:', userId, 'Role:', role);
         const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            console.log('User not found for role selection:', userId);
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         user.role = role;
         user.name = name;
         await user.save();
+        console.log('User role and name updated for user ID:', user._id);
 
         if (role === 'client') {
-            await Client.create({ userId: user._id, company: extraData.company });
+            console.log('Creating Client profile for user ID:', user._id, 'Company:', extraData.company);
+            const clientProfile = await Client.create({ userId: user._id, company: extraData.company });
+            console.log('Client profile created with ID:', clientProfile._id);
         } else if (role === 'freelancer') {
-            await Freelancer.create({ userId: user._id, skills: extraData.skills, experience: extraData.experience });
+            console.log('Creating Freelancer profile for user ID:', user._id, 'Skills:', extraData.skills, 'Experience:', extraData.experience);
+            const freelancerProfile = await Freelancer.create({
+              userId: user._id,
+              skills: extraData.skills,
+              experience: extraData.experience,
+            });
+            console.log('Freelancer profile created with ID:', freelancerProfile._id);
         }
 
         res.status(200).json({ message: 'Role assigned successfully', user });
     } catch (error) {
+        console.error('Role selection error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -261,5 +264,62 @@ router.get('/current-user', auth, (req, res) => {
     res.json(req.user); // The `auth` middleware adds `req.user`
 });
 
+// Admin login endpoint
+router.post('/admin/login', async (req, res) => {
+    try {
+        const { walletAddress } = req.body;
+
+        if (!walletAddress) {
+            return res.status(400).json({
+                success: false,
+                message: 'Wallet address is required'
+            });
+        }
+
+        // Normalize wallet address
+        const normalizedAddress = walletAddress.toLowerCase();
+
+        // Find user with admin role
+        const user = await User.findOne({
+            walletAddress: normalizedAddress,
+            role: 'admin'
+        });
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Access denied: Invalid admin wallet address or insufficient permissions'
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: user._id,
+                walletAddress: user.walletAddress,
+                role: user.role
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                _id: user._id,
+                walletAddress: user.walletAddress,
+                role: user.role,
+                name: user.name
+            }
+        });
+    } catch (error) {
+        console.error('Admin login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error during admin login'
+        });
+    }
+});
 
 module.exports = router;

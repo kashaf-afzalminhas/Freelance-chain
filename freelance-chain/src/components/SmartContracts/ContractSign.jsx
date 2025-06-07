@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useWeb3 } from '../../context/Web3Context';
 
 const ContractSign = ({ contract, onSign }) => {
@@ -10,9 +10,12 @@ const ContractSign = ({ contract, onSign }) => {
         try {
             setIsSigning(true);
             setError('');
-            await onSign(contract._id);
+            
+            // Sign contract with wallet address
+            await onSign(contract._id, account);
         } catch (err) {
-            setError(err.message);
+            console.error('Sign contract error:', err);
+            setError(err.message || 'Failed to sign contract');
         } finally {
             setIsSigning(false);
         }
@@ -43,6 +46,13 @@ const ContractSign = ({ contract, onSign }) => {
                         {error}
                     </div>
                 )}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <h4 className="font-medium text-blue-800 mb-2">Smart Contract Signing</h4>
+                    <p className="text-blue-600 text-sm">
+                        By signing this contract, you agree to the terms and conditions. 
+                        This action will be recorded on the blockchain.
+                    </p>
+                </div>
                 <button
                     onClick={handleSign}
                     disabled={isSigning}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { bidService } from '../../../services/api';
 import EditBidModal from './EditBidModal';
+import { FileText } from 'lucide-react';
 
 const MyProposals = () => {
     const [bids, setBids] = useState([]); // Initialize as empty array
@@ -30,13 +31,46 @@ const MyProposals = () => {
     setShowEditModal(true);
   };
 
-  const handleUpdateBid = async (updatedBid) => {
+  const handleUpdateBid = async (formData) => {
     try {
-      await bidService.updateBid(selectedBid._id, updatedBid);
-      setBids(bids.map(b => b._id === selectedBid._id ? { ...b, ...updatedBid } : b));
+      // Submit the update
+      await bidService.updateBid(selectedBid._id, formData);
+      
+      // Refetch the updated bid details
+      const updatedBidResponse = await bidService.getBidDetails(selectedBid._id);
+      const updatedBid = updatedBidResponse.data;
+
+      // Update the bids list in the state with the refetched data
+      setBids(bids.map(b => b._id === updatedBid._id ? updatedBid : b));
+      
       setShowEditModal(false);
     } catch (err) {
-      setError(err.message);
+      console.error('Error updating bid:', err);
+      setError(err.message || "Failed to update bid");
+    }
+  };
+
+  const handleFileClick = (file) => {
+    // Construct the full URL using the API base URL
+    const baseUrl = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
+    const fileUrl = `${baseUrl}${file.url}`;
+    
+    console.log('Opening file:', {
+      originalUrl: file.url,
+      fullUrl: fileUrl,
+      fileType: file.type
+    });
+
+    if (file.type === 'image' || file.type === 'pdf') {
+      window.open(fileUrl, '_blank');
+    } else {
+      // For other file types, trigger download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -73,11 +107,13 @@ const MyProposals = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h2 className="text-xl font-bold text-secondary">
-                    <Link to={`/jobs/${bid.jobId._id}`} className="hover:text-primary">
-                      {bid.jobId.title}
+                    <Link to={bid.jobId && bid.jobId._id ? `/jobs/${bid.jobId._id}` : "#"} className="hover:text-primary">
+                      {bid.jobId && bid.jobId.title ? bid.jobId.title : "Unknown Job"}
                     </Link>
                   </h2>
-                  <p className="text-gray-600 mt-1">{bid.jobId.description.substring(0, 100)}...</p>
+                  <p className="text-gray-600 mt-1">
+                    {bid.jobId && bid.jobId.description ? bid.jobId.description.substring(0, 100) + "..." : ""}
+                  </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   bid.status === 'accepted' ? 'bg-green-100 text-green-800' :
@@ -103,6 +139,32 @@ const MyProposals = () => {
                 </div>
               </div>
               
+              {bid.bidMedia && bid.bidMedia.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Attached Files:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {bid.bidMedia.map((file, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleFileClick(file)}
+                        className="flex items-center px-3 py-2 bg-gray-50 rounded-md hover:bg-gray-100 cursor-pointer"
+                      >
+                        {file.type === 'image' ? (
+                          <img
+                            src={`${import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000'}${file.url}`}
+                            alt={file.name}
+                            className="h-8 w-8 object-cover rounded mr-2"
+                          />
+                        ) : (
+                          <FileText className="h-5 w-5 text-gray-500 mr-2" />
+                        )}
+                        <span className="text-sm text-gray-600">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="flex space-x-3">
                 <button 
                   onClick={() => handleEditBid(bid)}
@@ -116,7 +178,7 @@ const MyProposals = () => {
                   Edit Proposal
                 </button>
                 <Link 
-                  to={`/jobs/${bid.jobId._id}`}
+                  to={bid.jobId && bid.jobId._id ? `/jobs/${bid.jobId._id}` : "#"}
                   className="px-4 py-2 rounded-md font-medium border border-gray-300 text-gray-700 hover:bg-gray-100"
                 >
                   View Job
