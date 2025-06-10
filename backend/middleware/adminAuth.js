@@ -2,7 +2,11 @@ const { ethers } = require('ethers');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
-const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
+// Array of admin wallet addresses
+const ADMIN_WALLET_ADDRESSES = [
+  '0x3Ff804112919805fFB8968ad81dBb23b32e8F3f1',
+  '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc'
+];
 
 const validateAdminWallet = async (req, res, next) => {
   try {
@@ -51,10 +55,12 @@ const validateAdminWallet = async (req, res, next) => {
     }
 
     // Normalize addresses for comparison
-    const normalizedAdminAddress = ADMIN_WALLET_ADDRESS.toLowerCase();
     const normalizedUserAddress = walletAddress.toLowerCase();
+    const isAdminWallet = ADMIN_WALLET_ADDRESSES.some(
+      adminAddress => adminAddress.toLowerCase() === normalizedUserAddress
+    );
 
-    if (normalizedUserAddress !== normalizedAdminAddress) {
+    if (!isAdminWallet) {
       return res.status(403).json({
         success: false,
         message: 'Access denied: Invalid admin wallet address'
@@ -76,5 +82,5 @@ const validateAdminWallet = async (req, res, next) => {
 
 module.exports = {
   validateAdminWallet,
-  ADMIN_WALLET_ADDRESS
+  ADMIN_WALLET_ADDRESSES
 }; 

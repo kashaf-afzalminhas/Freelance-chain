@@ -3,10 +3,11 @@ import { initSocket, getSocket, disconnectSocket } from './services/socket';
 import { useNavigate } from 'react-router-dom';
 import { api } from './services/api';
 
-export const AuthContext = createContext();
+// Create context
+const AuthContext = createContext();
 
-// Add useAuth hook
-export const useAuth = () => {
+// Custom hook for using auth context
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -14,6 +15,7 @@ export const useAuth = () => {
   return context;
 };
 
+// Auth Provider component
 const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [chatWithUser, setChatWithUser] = useState(null);
@@ -28,8 +30,48 @@ const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('userId');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminUser');
     setCurrentUser(null);
     setIsAdmin(false);
+  };
+
+  const verifyAdminStatus = async (user) => {
+    try {
+      console.log('Verifying admin status for user:', user);
+      
+      if (!user || !user.walletAddress) {
+        console.error('Invalid user data for admin verification');
+        return false;
+      }
+
+      const response = await api.get('/api/admin/verify', {
+        params: {
+          walletAddress: user.walletAddress
+        }
+      });
+      
+      console.log('Admin verification response:', response.data);
+      
+      const isAdminUser = response.data.success && response.data.isAdmin;
+      setIsAdmin(isAdminUser);
+      localStorage.setItem('isAdmin', isAdminUser.toString());
+      
+      if (isAdminUser && response.data.user) {
+        localStorage.setItem('adminUser', JSON.stringify(response.data.user));
+      }
+      
+      return isAdminUser;
+    } catch (error) {
+      console.error('Error verifying admin status:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      setIsAdmin(false);
+      localStorage.setItem('isAdmin', 'false');
+      return false;
+    }
   };
 
   useEffect(() => {
@@ -55,8 +97,11 @@ const AuthProvider = ({ children }) => {
           console.log('Fetched Current User:', user);
           setCurrentUser(user);
 
+          // Verify admin status
+          const isAdminUser = await verifyAdminStatus(user);
+          
           // Initialize socket connection only if not already initialized and not admin
-          if (!isSocketInitialized && user._id && !storedIsAdmin) {
+          if (!isSocketInitialized && user._id && !isAdminUser) {
             const socket = initSocket(user._id);
             setIsSocketInitialized(true);
 
@@ -75,6 +120,7 @@ const AuthProvider = ({ children }) => {
             };
           }
         } catch (error) {
+          console.error('Error in fetchCurrentUser:', error);
           if (error.response?.status === 401) {
             clearAuthData();
             setError('Session expired. Please sign in again.');
@@ -105,7 +151,8 @@ const AuthProvider = ({ children }) => {
     error,
     isAdmin,
     setIsAdmin,
-    clearAuthData
+    clearAuthData,
+    verifyAdminStatus
   };
 
   return (
@@ -115,4 +162,6 @@ const AuthProvider = ({ children }) => {
   );
 };
 
+// Named exports
+export { useAuth, AuthContext };
 export default AuthProvider;

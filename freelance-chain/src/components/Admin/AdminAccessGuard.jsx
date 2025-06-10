@@ -4,8 +4,11 @@ import { useWeb3 } from '../../context/Web3Context';
 import { toast } from 'react-hot-toast';
 import { api } from '../../services/api';
 
-// Make sure this matches exactly with the backend ADMIN_WALLET_ADDRESS
-const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
+// Array of admin wallet addresses
+const ADMIN_WALLET_ADDRESSES = [
+  '0x3Ff804112919805fFB8968ad81dBb23b32e8F3f1',
+  '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc'
+];
 
 const AdminAccessGuard = ({ children }) => {
   const { account, isConnected, connectWallet } = useWeb3();
@@ -36,7 +39,6 @@ const AdminAccessGuard = ({ children }) => {
         }
 
         // Normalize addresses for comparison
-        const normalizedAdminAddress = ADMIN_WALLET_ADDRESS.toLowerCase().trim();
         const normalizedUserAddress = account?.toLowerCase().trim();
 
         if (!normalizedUserAddress) {
@@ -46,7 +48,12 @@ const AdminAccessGuard = ({ children }) => {
           return;
         }
 
-        if (normalizedUserAddress !== normalizedAdminAddress) {
+        // Check if the connected wallet is in the admin list
+        const isAdminWallet = ADMIN_WALLET_ADDRESSES.some(
+          adminAddress => adminAddress.toLowerCase().trim() === normalizedUserAddress
+        );
+
+        if (!isAdminWallet) {
           toast.error('Access denied: Invalid admin wallet address');
           if (isMounted.current) setIsChecking(false);
           navigate('/');
@@ -63,30 +70,56 @@ const AdminAccessGuard = ({ children }) => {
         }
 
         try {
-          const response = await api.get('/admin/verify', {
+          console.log('Verifying admin access with:', {
+            walletAddress: normalizedUserAddress,
+            token: token ? 'Token exists' : 'No token'
+          });
+
+          const response = await api.get('/api/admin/verify', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
             params: {
               walletAddress: normalizedUserAddress
             }
           });
 
+          console.log('Admin verification response:', response.data);
+
           if (!response.data.success || !response.data.isAdmin) {
-            throw new Error('Admin verification failed');
+            throw new Error(response.data.message || 'Admin verification failed');
           }
 
           localStorage.setItem('isAdmin', 'true');
+          if (response.data.user) {
+            localStorage.setItem('adminUser', JSON.stringify(response.data.user));
+          }
+
           if (isMounted.current) {
             setIsVerified(true);
             setIsChecking(false);
           }
         } catch (error) {
+          console.error('Admin verification error:', error);
+          console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
+          
           toast.error(error.response?.data?.message || 'Error verifying admin status');
-          if (isMounted.current) setIsChecking(false);
-          navigate('/');
+          if (isMounted.current) {
+            setIsChecking(false);
+            navigate('/');
+          }
         }
       } catch (error) {
+        console.error('Error checking admin access:', error);
         toast.error('Error checking admin access');
-        if (isMounted.current) setIsChecking(false);
-        navigate('/');
+        if (isMounted.current) {
+          setIsChecking(false);
+          navigate('/');
+        }
       }
     };
 
@@ -94,8 +127,7 @@ const AdminAccessGuard = ({ children }) => {
     if (!isVerified && isChecking) {
       verifyAdminAccess();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, isConnected, hasAttemptedConnect]);
+  }, [account, isConnected, hasAttemptedConnect, navigate]);
 
   if (isChecking) {
     return (

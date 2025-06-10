@@ -6,18 +6,49 @@ exports.getNotifications = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const userId = req.user.id;
 
+    console.log('Fetching notifications for user:', userId);
+
+    if (!userId) {
+      console.error('No user ID provided in request');
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
     const result = await notificationService.getUserNotifications(userId, parseInt(page), parseInt(limit));
+    
+    if (!result) {
+      console.error('No result returned from getUserNotifications');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch notifications'
+      });
+    }
+
+    console.log('Notifications fetched successfully:', {
+      count: result.notifications?.length,
+      total: result.total,
+      page: result.page
+    });
     
     // Ensure all notifications have populated sender information
     const populatedNotifications = await Promise.all(
       result.notifications.map(async (notification) => {
-        if (!notification.senderId || typeof notification.senderId === 'string') {
-          return await Notification.findById(notification._id)
-            .populate('senderId', 'name profileImage');
+        try {
+          if (!notification.senderId || typeof notification.senderId === 'string') {
+            const populated = await Notification.findById(notification._id)
+              .populate('senderId', 'name profileImage');
+            return populated || notification;
+          }
+          return notification;
+        } catch (populateError) {
+          console.error('Error populating notification:', populateError);
+          return notification;
         }
-        return notification;
       })
     );
+
     res.json({
       success: true,
       data: {
@@ -27,6 +58,7 @@ exports.getNotifications = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in getNotifications:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch notifications',

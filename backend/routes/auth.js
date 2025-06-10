@@ -4,7 +4,7 @@ const User = require('../models/User');
 const Client = require('../models/Client');
 const Freelancer = require('../models/Freelancer');
 const auth = require('../middleware/auth');
-const { ADMIN_WALLET_ADDRESS } = require('../middleware/adminAuth');
+const { ADMIN_WALLET_ADDRESSES } = require('../middleware/adminAuth');
 const crypto = require('crypto');
 const Web3 = require('web3');
 const router = express.Router();
@@ -12,6 +12,14 @@ const router = express.Router();
 const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID');
 // Generate a random nonce
 const generateNonce = () => crypto.randomBytes(16).toString('hex');
+
+// Helper function to check if a wallet is an admin
+const isAdminWallet = (walletAddress) => {
+    if (!walletAddress) return false;
+    return ADMIN_WALLET_ADDRESSES.some(
+        adminAddress => adminAddress.toLowerCase() === walletAddress.toLowerCase()
+    );
+};
 
 // MetaMask Login: Step 1 - Request Nonce
 router.post('/metamask/request', async (req, res) => {
@@ -22,15 +30,16 @@ router.post('/metamask/request', async (req, res) => {
     }
 
     try {
-        let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+        const normalizedAddress = walletAddress.toLowerCase();
+        let user = await User.findOne({ walletAddress: normalizedAddress });
 
         // If the user does not exist, create a new entry
         if (!user) {
             user = new User({ 
-                walletAddress: walletAddress.toLowerCase(),
+                walletAddress: normalizedAddress,
                 nonce: generateNonce(),
-                // Set role to admin if it's the admin wallet
-                role: walletAddress.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase() ? 'admin' : undefined
+                // Set role to admin if it's an admin wallet
+                role: isAdminWallet(normalizedAddress) ? 'admin' : undefined
             });
             await user.save();
         } else {
@@ -39,7 +48,7 @@ router.post('/metamask/request', async (req, res) => {
             await user.save();
         }
 
-        console.log('Nonce generated for:', walletAddress, user.nonce); // Debugging
+        console.log('Nonce generated for:', normalizedAddress, user.nonce); // Debugging
         res.status(200).json({ nonce: user.nonce });
     } catch (error) {
         console.error('Error in /metamask/request:', error); // Debugging
@@ -71,8 +80,9 @@ router.post('/metamask/verify', async (req, res) => {
     }
 
     try {
-        console.log('Looking up user with wallet:', walletAddress.toLowerCase());
-        let user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+        const normalizedAddress = walletAddress.toLowerCase();
+        console.log('Looking up user with wallet:', normalizedAddress);
+        let user = await User.findOne({ walletAddress: normalizedAddress });
         
         if (!user) {
             console.log('User not found in database');
@@ -104,11 +114,11 @@ router.post('/metamask/verify', async (req, res) => {
             const recoveredAddress = web3.eth.accounts.recover(message, signature);
             console.log('Recovery results:', {
                 recoveredAddress,
-                expectedAddress: walletAddress.toLowerCase(),
-                match: recoveredAddress.toLowerCase() === walletAddress.toLowerCase()
+                expectedAddress: normalizedAddress,
+                match: recoveredAddress.toLowerCase() === normalizedAddress
             });
 
-            if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+            if (recoveredAddress.toLowerCase() !== normalizedAddress) {
                 console.log('Signature verification failed');
                 return res.status(401).json({ 
                     error: 'Invalid signature',
@@ -124,7 +134,7 @@ router.post('/metamask/verify', async (req, res) => {
         }
 
         // Check if this is an admin login attempt
-        if (isAdmin && walletAddress.toLowerCase() === ADMIN_WALLET_ADDRESS.toLowerCase()) {
+        if (isAdmin && isAdminWallet(normalizedAddress)) {
             // Update user role to admin if not already
             if (user.role !== 'admin') {
                 user.role = 'admin';
@@ -168,7 +178,7 @@ router.post('/check-wallet', async (req, res) => {
     }
   
     try {
-      const user = await User.findOne({ walletAddress });
+      const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
       res.status(200).json({ exists: !!user });
     } catch (error) {
       console.error('Check wallet error', error);
@@ -185,16 +195,17 @@ router.post('/check-wallet', async (req, res) => {
     }
   
     try {
+      const normalizedAddress = walletAddress.toLowerCase();
       // Check if the wallet address is already registered
-      const existingUser = await User.findOne({ walletAddress });
+      const existingUser = await User.findOne({ walletAddress: normalizedAddress });
       if (existingUser) {
         return res.status(400).json({ message: 'Wallet address is already registered' });
       }
   
       // Create a new user
-      console.log('Attempting to create new user with walletAddress:', walletAddress);
+      console.log('Attempting to create new user with walletAddress:', normalizedAddress);
       const user = new User({
-        walletAddress,
+        walletAddress: normalizedAddress,
         password, // In a real app, hash the password before saving
         nonce: generateNonce(), // Generate a nonce for MetaMask login
       });

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 
-const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
+// Array of admin wallet addresses
+const ADMIN_WALLET_ADDRESSES = [
+  '0x3Ff804112919805fFB8968ad81dBb23b32e8F3f1',
+  '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc'
+];
 
 const SignIn = () => {
     const [error, setError] = useState('');
@@ -39,21 +43,32 @@ const SignIn = () => {
                 throw new Error('No wallet address found');
             }
 
-            // Check if this is the admin wallet
-            const isAdminWallet = walletAddress === ADMIN_WALLET_ADDRESS.toLowerCase();
+            // Check if this is an admin wallet
+            const isAdminWallet = ADMIN_WALLET_ADDRESSES.some(
+                adminAddress => adminAddress.toLowerCase() === walletAddress
+            );
+
+            console.log('Wallet Address:', walletAddress);
+            console.log('Is Admin Wallet:', isAdminWallet);
 
             // Step 1: Request nonce from the backend
             const nonceResponse = await api.post('/auth/metamask/request', {
                 walletAddress: walletAddress
             });
 
+            console.log('Nonce Response:', nonceResponse.data);
+
             if (nonceResponse.data.nonce) {
                 // Sign the nonce
                 const message = `Nonce: ${nonceResponse.data.nonce}`;
+                console.log('Signing message:', message);
+
                 const signature = await window.ethereum.request({
                     method: 'personal_sign',
                     params: [message, walletAddress],
                 });
+
+                console.log('Generated signature:', signature);
 
                 // Verify the signature and get token
                 const verifyResponse = await api.post('/auth/metamask/verify', {
@@ -61,6 +76,8 @@ const SignIn = () => {
                     signature: signature,
                     isAdmin: isAdminWallet
                 });
+
+                console.log('Verify Response:', verifyResponse.data);
 
                 const { token, user } = verifyResponse.data;
 
@@ -70,24 +87,46 @@ const SignIn = () => {
                 localStorage.setItem('userId', user._id);
 
                 if (isAdminWallet) {
+                    console.log('Admin wallet detected, proceeding with admin verification');
                     localStorage.setItem('isAdmin', 'true');
                     // Verify admin status with backend
                     try {
-                        const adminResponse = await api.get('/admin/verify', {
+                        console.log('Making admin verification request with:', {
+                            token: token ? 'Token exists' : 'No token',
+                            walletAddress: walletAddress
+                        });
+
+                        const adminResponse = await api.get('/api/admin/verify', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
                             params: {
                                 walletAddress: walletAddress
                             }
                         });
 
+                        console.log('Admin verification response:', adminResponse.data);
+
                         if (adminResponse.data.success && adminResponse.data.isAdmin) {
+                            console.log('Admin verification successful, navigating to dashboard');
+                            // Store admin user data
+                            localStorage.setItem('adminUser', JSON.stringify(adminResponse.data.user));
                             navigate('/admin/dashboard');
                         } else {
-                            throw new Error('Admin verification failed');
+                            console.log('Admin verification failed:', adminResponse.data);
+                            localStorage.removeItem('isAdmin');
+                            throw new Error(adminResponse.data.message || 'Admin verification failed');
                         }
                     } catch (error) {
                         console.error('Admin verification error:', error);
+                        console.error('Error details:', {
+                            message: error.message,
+                            response: error.response?.data,
+                            status: error.response?.status,
+                            headers: error.response?.headers
+                        });
                         localStorage.removeItem('isAdmin');
-                        throw new Error('Failed to verify admin status');
+                        throw new Error(error.response?.data?.message || 'Failed to verify admin status');
                     }
                 } else {
                     localStorage.removeItem('isAdmin');
@@ -103,7 +142,12 @@ const SignIn = () => {
             }
         } catch (error) {
             console.error('MetaMask login error:', error);
-            setError(error.response?.data?.message || 'MetaMask login failed. Please try again.');
+            console.error('Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status
+            });
+            setError(error.response?.data?.message || error.message || 'MetaMask login failed. Please try again.');
         } finally {
             setLoading(false);
         }

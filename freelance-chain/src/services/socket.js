@@ -55,6 +55,11 @@ export const initSocket = (userId) => {
     console.error('Socket error:', error);
   });
 
+  // Add notification event handler
+  socket.on('notification', (notification) => {
+    console.log('Received notification:', notification);
+  });
+
   return socket;
 };
 

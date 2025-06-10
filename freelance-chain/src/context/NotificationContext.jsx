@@ -27,21 +27,29 @@ export const NotificationProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await api.get('/notifications');
-      // Handle the response data correctly
-      const notificationsData = response.data.notifications || response.data || [];
-      const notifications = notificationsData.map(notification => ({
-        ...notification,
-        senderId: notification.senderId || null
-      }));
-      setNotifications(notifications);
-      setUnreadCount(notifications.filter(n => !n.isRead).length);
+      
+      // Check if the response has the expected structure
+      if (response.data?.success && response.data?.data?.notifications) {
+        const notifications = response.data.data.notifications;
+        setNotifications(notifications);
+        setUnreadCount(notifications.filter(n => !n.isRead).length);
+      } else {
+        console.warn('Unexpected notification response structure:', response.data);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      if (error.response?.status === 401) {
-        toast.error('Please sign in to view notifications');
-      } else {
-        toast.error('Failed to fetch notifications');
+      // Only show error toast if we're on the notifications page
+      if (window.location.pathname.includes('/notifications')) {
+        if (error.response?.status === 401) {
+          toast.error('Please sign in to view notifications');
+        } else {
+          toast.error('Failed to fetch notifications');
+        }
       }
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setIsLoading(false);
     }
@@ -139,4 +147,6 @@ export const NotificationProvider = ({ children }) => {
       {children}
     </NotificationContext.Provider>
   );
-}; 
+};
+
+export default NotificationProvider; 

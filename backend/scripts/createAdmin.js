@@ -2,7 +2,10 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../models/User');
 
-const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
+const ADMIN_WALLET_ADDRESSES = [
+  '0x3Ff804112919805fFB8968ad81dBb23b32e8F3f1',
+  '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc'
+];
 
 async function createAdminUser() {
     try {
@@ -13,32 +16,37 @@ async function createAdminUser() {
         });
         console.log('Connected to MongoDB');
 
-        // Check if admin user exists
-        const adminUser = await User.findOne({
-            walletAddress: ADMIN_WALLET_ADDRESS.toLowerCase(),
-            role: 'admin'
-        });
-
-        if (adminUser) {
-            console.log('Admin user already exists:', {
-                id: adminUser._id,
-                walletAddress: adminUser.walletAddress,
-                role: adminUser.role
-            });
-        } else {
-            // Create admin user
-            const newAdmin = new User({
-                walletAddress: ADMIN_WALLET_ADDRESS.toLowerCase(),
-                role: 'admin',
-                name: 'Admin User'
+        // Process each admin wallet address
+        for (const walletAddress of ADMIN_WALLET_ADDRESSES) {
+            const normalizedAddress = walletAddress.toLowerCase();
+            
+            // Check if admin user exists
+            const adminUser = await User.findOne({
+                walletAddress: normalizedAddress,
+                role: 'admin'
             });
 
-            await newAdmin.save();
-            console.log('Admin user created successfully:', {
-                id: newAdmin._id,
-                walletAddress: newAdmin.walletAddress,
-                role: newAdmin.role
-            });
+            if (adminUser) {
+                console.log('Admin user already exists:', {
+                    id: adminUser._id,
+                    walletAddress: adminUser.walletAddress,
+                    role: adminUser.role
+                });
+            } else {
+                // Create admin user
+                const newAdmin = new User({
+                    walletAddress: normalizedAddress,
+                    role: 'admin',
+                    name: 'Admin User'
+                });
+
+                await newAdmin.save();
+                console.log('Admin user created successfully:', {
+                    id: newAdmin._id,
+                    walletAddress: newAdmin.walletAddress,
+                    role: newAdmin.role
+                });
+            }
         }
     } catch (error) {
         console.error('Error:', error);
