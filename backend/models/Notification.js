@@ -24,9 +24,10 @@ const notificationSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function(v) {
-        return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(v);
+        // Accept any string that starts with / or http(s)://
+        return v.startsWith('/') || v.startsWith('http://') || v.startsWith('https://');
       },
-      message: props => `${props.value} is not a valid URL!`
+      message: props => `${props.value} must start with / or http(s)://`
     }
   },
   isRead: {
@@ -148,7 +149,10 @@ notificationSettingsSchema.methods.isNotificationEnabled = function(category, ty
   return this[category].enabled && this[category].types[type];
 };
 
+const Notification = mongoose.model('Notification', notificationSchema);
+const NotificationSettings = mongoose.model('NotificationSettings', notificationSettingsSchema);
+
 module.exports = {
-  Notification: mongoose.model('Notification', notificationSchema),
-  NotificationSettings: mongoose.model('NotificationSettings', notificationSettingsSchema)
+  Notification,
+  NotificationSettings
 }; 

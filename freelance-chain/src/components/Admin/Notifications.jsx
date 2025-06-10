@@ -38,26 +38,40 @@ const Notifications = () => {
 
   const sendNotificationMutation = useMutation({
     mutationFn: async (data) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
       const payload = {
         ...data,
         targetUsers: selectedUser === 'all' ? [] : [selectedUser],
-        walletAddress: ADMIN_WALLET_ADDRESS // Ensure walletAddress is always sent in body
+        walletAddress: ADMIN_WALLET_ADDRESS
       };
-      const response = await axios.post(
-        'http://localhost:5000/api/admin/notifications',
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          params: { // Send walletAddress as query parameter for middleware
-            walletAddress: ADMIN_WALLET_ADDRESS
+
+      try {
+        const response = await axios.post(
+          'http://localhost:5000/api/admin/notifications',
+          payload,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            params: {
+              walletAddress: ADMIN_WALLET_ADDRESS
+            }
           }
-        }
-      );
-      return response.data;
+        );
+        return response.data;
+      } catch (error) {
+        console.error('Notification error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers
+        });
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Notification sent successfully');
@@ -65,7 +79,9 @@ const Notifications = () => {
       setSelectedUser('all');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || 'Failed to send notification');
+      console.error('Notification error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send notification';
+      toast.error(errorMessage);
     }
   });
 

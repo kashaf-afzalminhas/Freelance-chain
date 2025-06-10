@@ -1,10 +1,10 @@
 const notificationService = require('../services/notificationService');
-const Notification = require('../models/Notification');
+const { Notification } = require('../models/Notification');
 
 exports.getNotifications = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     console.log('Fetching notifications for user:', userId);
 
@@ -70,7 +70,7 @@ exports.getNotifications = async (req, res) => {
 exports.markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     console.log(`Attempting to mark notification as read: notificationId=${notificationId}, userId=${userId}`);
 
@@ -106,15 +106,28 @@ exports.markAsRead = async (req, res) => {
 
 exports.markAllAsRead = async (req, res) => {
   try {
-    const userId = req.user.id;
-    await notificationService.markAllAsRead(userId);
+    const userId = req.user._id;
+    console.log(`Attempting to mark all notifications as read for user: ${userId}`);
 
+    const result = await notificationService.markAllAsRead(userId);
+    console.log('Mark all as read result:', result);
+
+    if (!result) {
+      console.error('Failed to mark all notifications as read');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to mark all notifications as read'
+      });
+    }
+
+    console.log(`Successfully marked all notifications as read for user: ${userId}`);
     res.json({
       success: true,
       message: 'All notifications marked as read'
     });
   } catch (error) {
     console.error('Error in markAllAsRead:', error);
+    console.error('Stack trace:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to mark all notifications as read',
@@ -125,7 +138,7 @@ exports.markAllAsRead = async (req, res) => {
 
 exports.getNotificationSettings = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const settings = await notificationService.getUserNotificationSettings(userId);
     
     if (!settings) {
@@ -151,7 +164,7 @@ exports.getNotificationSettings = async (req, res) => {
 
 exports.updateNotificationSettings = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const settings = req.body;
 
     const updatedSettings = await notificationService.updateNotificationSettings(userId, settings);

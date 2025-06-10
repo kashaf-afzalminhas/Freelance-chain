@@ -260,13 +260,31 @@ const markAsRead = async (notificationId, userId) => {
 // Mark all notifications as read
 const markAllAsRead = async (userId) => {
   try {
-    await Notification.updateMany(
+    console.log(`Finding unread notifications for user: ${userId}`);
+    const unreadCount = await Notification.countDocuments({ userId, isRead: false });
+    console.log(`Found ${unreadCount} unread notifications`);
+
+    if (unreadCount === 0) {
+      console.log('No unread notifications to mark as read');
+      return true;
+    }
+
+    const result = await Notification.updateMany(
       { userId, isRead: false },
       { isRead: true }
     );
+    console.log('Update result:', result);
+
+    if (result.modifiedCount === 0) {
+      console.warn('No notifications were modified');
+      return false;
+    }
+
+    console.log(`Successfully marked ${result.modifiedCount} notifications as read`);
     return true;
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
+    console.error('Stack trace:', error.stack);
     return false;
   }
 };

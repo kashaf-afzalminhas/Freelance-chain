@@ -11,20 +11,43 @@ const ADMIN_WALLET_ADDRESSES = [
 const validateAdminWallet = async (req, res, next) => {
   try {
     // First validate the JWT token
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const authHeader = req.header('Authorization');
+    console.log('Auth header:', authHeader);
+
+    if (!authHeader) {
       return res.status(401).json({
         success: false,
         message: 'No authentication token provided'
       });
     }
 
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token format'
+      });
+    }
+
+    console.log('Token to verify:', token);
+
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded || !decoded.userId) {
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Decoded token:', decoded);
+    } catch (jwtError) {
+      console.error('JWT verification error:', jwtError);
       return res.status(401).json({
         success: false,
         message: 'Invalid authentication token'
+      });
+    }
+
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token payload'
       });
     }
 
@@ -47,6 +70,8 @@ const validateAdminWallet = async (req, res, next) => {
 
     // Validate wallet address
     const walletAddress = req.query.walletAddress || req.body.walletAddress;
+    console.log('Wallet address from request:', walletAddress);
+
     if (!walletAddress) {
       return res.status(401).json({
         success: false,
@@ -75,7 +100,8 @@ const validateAdminWallet = async (req, res, next) => {
     console.error('Admin wallet validation error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error validating admin access'
+      message: 'Error validating admin access',
+      error: error.message
     });
   }
 };
