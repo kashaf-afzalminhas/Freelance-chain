@@ -27,8 +27,9 @@ export const NotificationProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const response = await api.get('/notifications');
-      // Ensure sender information is properly handled
-      const notifications = response.data.data.notifications.map(notification => ({
+      // Handle the response data correctly
+      const notificationsData = response.data.notifications || response.data || [];
+      const notifications = notificationsData.map(notification => ({
         ...notification,
         senderId: notification.senderId || null
       }));
@@ -36,7 +37,11 @@ export const NotificationProvider = ({ children }) => {
       setUnreadCount(notifications.filter(n => !n.isRead).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      toast.error('Failed to fetch notifications');
+      if (error.response?.status === 401) {
+        toast.error('Please sign in to view notifications');
+      } else {
+        toast.error('Failed to fetch notifications');
+      }
     } finally {
       setIsLoading(false);
     }

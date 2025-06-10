@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { initSocket, getSocket, disconnectSocket } from './services/socket';
+import { useNavigate } from 'react-router-dom';
+import { api } from './services/api';
 
 export const AuthContext = createContext();
 
@@ -19,6 +21,16 @@ const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  const clearAuthData = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('isAdmin');
+    setCurrentUser(null);
+    setIsAdmin(false);
+  };
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -26,7 +38,7 @@ const AuthProvider = ({ children }) => {
         setIsLoading(true);
         setError(null);
         
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
         setIsAdmin(storedIsAdmin);
 
@@ -37,64 +49,52 @@ const AuthProvider = ({ children }) => {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/auth/current-user', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+        try {
+          const response = await api.get('/auth/current-user');
+          const user = response.data;
+          console.log('Fetched Current User:', user);
+          setCurrentUser(user);
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            // Token is invalid or expired
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('userId');
-            localStorage.removeItem('isAdmin');
-            setCurrentUser(null);
-            setIsAdmin(false);
+          // Initialize socket connection only if not already initialized and not admin
+          if (!isSocketInitialized && user._id && !storedIsAdmin) {
+            const socket = initSocket(user._id);
+            setIsSocketInitialized(true);
+
+            socket.on('connect', () => {
+              console.log('🔗 Socket connected:', socket.id);
+            });
+
+            socket.on('disconnect', () => {
+              console.warn('❌ Socket disconnected');
+            });
+
+            return () => {
+              socket.off('connect');
+              socket.off('disconnect');
+              disconnectSocket();
+            };
+          }
+        } catch (error) {
+          if (error.response?.status === 401) {
+            clearAuthData();
             setError('Session expired. Please sign in again.');
+            navigate('/signin');
           } else {
-            throw new Error(`Failed to fetch current user: ${response.status}`);
+            throw error;
           }
-          return;
-        }
-
-        const user = await response.json();
-        console.log('Fetched Current User:', user);
-        setCurrentUser(user);
-
-        // Initialize socket connection only if not already initialized and not admin
-        if (!isSocketInitialized && user._id && !storedIsAdmin) {
-          const socket = initSocket(user._id);
-          setIsSocketInitialized(true);
-
-          socket.on('connect', () => {
-            console.log('🔗 Socket connected:', socket.id);
-          });
-
-          socket.on('disconnect', () => {
-            console.warn('❌ Socket disconnected');
-          });
-
-          return () => {
-            socket.off('connect');
-            socket.off('disconnect');
-            disconnectSocket();
-          };
         }
       } catch (error) {
         console.error('Error fetching current user:', error);
         setError(error.message);
-        setCurrentUser(null);
-        setIsAdmin(false);
+        clearAuthData();
+        navigate('/signin');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCurrentUser();
-  }, [isSocketInitialized]);
+  }, [isSocketInitialized, navigate]);
 
   const value = {
     currentUser,
@@ -103,9 +103,9 @@ const AuthProvider = ({ children }) => {
     setChatWithUser,
     isLoading,
     error,
-    isSocketInitialized,
     isAdmin,
-    setIsAdmin
+    setIsAdmin,
+    clearAuthData
   };
 
   return (

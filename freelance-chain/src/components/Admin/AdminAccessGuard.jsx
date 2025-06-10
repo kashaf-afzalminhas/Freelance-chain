@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../../context/Web3Context';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import { api } from '../../services/api';
 
 // Make sure this matches exactly with the backend ADMIN_WALLET_ADDRESS
 const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
@@ -54,7 +54,7 @@ const AdminAccessGuard = ({ children }) => {
         }
 
         // Check if user has admin role in the database
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (!token) {
           toast.error('Authentication required');
           if (isMounted.current) setIsChecking(false);
@@ -63,11 +63,7 @@ const AdminAccessGuard = ({ children }) => {
         }
 
         try {
-          const response = await axios.get('http://localhost:5000/api/admin/verify', {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
+          const response = await api.get('/admin/verify', {
             params: {
               walletAddress: normalizedUserAddress
             }

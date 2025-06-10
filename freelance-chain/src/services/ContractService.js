@@ -1,19 +1,7 @@
 import { api } from './api';
 import { ethers } from 'ethers';
 import JobContractArtifact from '../../../contracts/build/contracts/JobContract.json';
-
-const getAuthConfig = () => {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    throw new Error('Authentication token not found');
-  }
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  };
-};
+import { toast } from 'react-hot-toast';
 
 export const contractService = {
   createContract: async (jobId, bidId, freelancerId, freelancerAddress, bidAmount, jobTitle, jobDescription, deadline) => {
@@ -28,7 +16,7 @@ export const contractService = {
         jobTitle, 
         jobDescription, 
         deadline
-      }, getAuthConfig());
+      });
 
       // 2. Deploy smart contract
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -60,7 +48,7 @@ export const contractService = {
       await api.put(`/contracts/${response.data._id}`, {
         contractAddress: await contract.getAddress(),
         transactionHash: contractInstance.hash
-      }, getAuthConfig());
+      });
 
       return {
         ...response.data,
@@ -75,17 +63,17 @@ export const contractService = {
 
   getUserContracts: async () => {
     try {
-      const response = await api.get('/contracts/user', getAuthConfig());
+      const response = await api.get('/contracts/user');
       return response.data;
     } catch (error) {
-      console.error('Get user contracts error:', error);
+      console.error('Failed to fetch contracts:', error);
       throw error;
     }
   },
 
   getContract: async (contractId) => {
     try {
-      const response = await api.get(`/contracts/${contractId}`, getAuthConfig());
+      const response = await api.get(`/contracts/${contractId}`);
       return response.data;
     } catch (error) {
       console.error('Get contract error:', error);
@@ -117,8 +105,7 @@ export const contractService = {
       // 3. Update backend
       const response = await api.post(
         `/contracts/${contractId}/sign`,
-        { signerAddress },
-        getAuthConfig()
+        { signerAddress }
       );
 
       return response.data;

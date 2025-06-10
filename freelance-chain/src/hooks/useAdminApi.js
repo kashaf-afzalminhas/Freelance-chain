@@ -9,7 +9,7 @@ export const useAdminApi = () => {
 
   // Helper function to get request config
   const getRequestConfig = (method = 'get', data = null) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     if (!token) {
       throw new Error('No authentication token found');
     }

@@ -1,4 +1,4 @@
-const Notification = require('../models/Notification');
+const { Notification, NotificationSettings } = require('../models/Notification');
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
 
@@ -54,10 +54,54 @@ const getOnlineUsers = () => {
   return onlineUsers;
 };
 
+// Get user's notification settings
+const getUserNotificationSettings = async (userId) => {
+  try {
+    let settings = await NotificationSettings.findOne({ userId });
+    if (!settings) {
+      settings = await NotificationSettings.create({ userId });
+    }
+    return settings;
+  } catch (error) {
+    console.error('Error getting notification settings:', error);
+    return null;
+  }
+};
+
+// Update user's notification settings
+const updateNotificationSettings = async (userId, settings) => {
+  try {
+    const updatedSettings = await NotificationSettings.findOneAndUpdate(
+      { userId },
+      { $set: settings },
+      { new: true, upsert: true }
+    );
+    return updatedSettings;
+  } catch (error) {
+    console.error('Error updating notification settings:', error);
+    return null;
+  }
+};
+
 // Create and send notification
 const notify = async (userId, type, content, link, io, senderId = null) => {
   let formattedContent = content;
   try {
+    // Get user's notification settings
+    const settings = await getUserNotificationSettings(userId);
+    if (!settings) {
+      console.warn(`No notification settings found for user: ${userId}`);
+      return null;
+    }
+
+    // Check if push notifications are enabled for this type
+    const shouldSendPush = settings.pushNotifications.enabled && 
+                          settings.pushNotifications.types[type];
+
+    // Check if email notifications are enabled for this type
+    const shouldSendEmail = settings.emailNotifications.enabled && 
+                           settings.emailNotifications.types[type];
+
     let sender = null;
     
     // If senderId is provided, get sender's information
@@ -85,8 +129,7 @@ const notify = async (userId, type, content, link, io, senderId = null) => {
             formattedContent = `${sender.name} approved your submitted work`;
             break;
           default:
-            // For admin notifications (info, warning, error), content is already formatted
-            formattedContent = content; 
+            formattedContent = content;
         }
       }
     }
@@ -100,37 +143,33 @@ const notify = async (userId, type, content, link, io, senderId = null) => {
       senderId
     });
 
-    // Populate sender information before saving
     if (sender) {
       notification.senderId = sender;
     }
 
     await notification.save();
 
-    // Get user's notification preferences
-    const user = await User.findById(userId);
-    if (!user) {
-      console.warn(`User not found for notification: ${userId}`);
-      return notification;
-    }
-
-    // Send real-time notification if user is online
-    const socketId = getUserSocketId(userId);
-    if (socketId && io) {
-      try {
-        // Populate sender information before sending
-        const populatedNotification = await Notification.findById(notification._id)
-          .populate('senderId', 'name profileImage');
-        io.to(socketId).emit('notification', populatedNotification);
-      } catch (socketError) {
-        console.warn('Failed to send socket notification:', socketError.message);
+    // Send real-time notification if enabled
+    if (shouldSendPush) {
+      const socketId = getUserSocketId(userId);
+      if (socketId && io) {
+        try {
+          const populatedNotification = await Notification.findById(notification._id)
+            .populate('senderId', 'name profileImage');
+          io.to(socketId).emit('notification', populatedNotification);
+        } catch (socketError) {
+          console.warn('Failed to send socket notification:', socketError.message);
+        }
       }
     }
 
-    // Send email notification if enabled and email service is configured
-    if (user.notificationSettings?.receiveEmail && transporter) {
+    // Send email notification if enabled
+    if (shouldSendEmail && transporter) {
       try {
-        await sendEmailNotification(user.email, formattedContent, link);
+        const user = await User.findById(userId);
+        if (user && user.email) {
+          await sendEmailNotification(user.email, formattedContent, link);
+        }
       } catch (emailError) {
         console.warn('Failed to send email notification:', emailError.message);
       }
@@ -139,16 +178,7 @@ const notify = async (userId, type, content, link, io, senderId = null) => {
     return notification;
   } catch (error) {
     console.error('Error in notify:', error);
-    // Return a basic notification even if there's an error
-    return {
-      userId,
-      type,
-      content: formattedContent || content,
-      link,
-      senderId,
-      isRead: false,
-      createdAt: new Date()
-    };
+    return null;
   }
 };
 
@@ -249,5 +279,7 @@ module.exports = {
   addOnlineUser,
   removeOnlineUser,
   getUserSocketId,
-  getOnlineUsers
+  getOnlineUsers,
+  getUserNotificationSettings,
+  updateNotificationSettings
 }; 

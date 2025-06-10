@@ -189,12 +189,21 @@ const Navbar = () => {
 
               {/* Common Links */}
               {!isAdmin && (
-                <Link
-                  to="/messages"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Messages
-                </Link>
+                <>
+                  <Link
+                    to="/messages"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Messages
+                  </Link>
+                  <Link
+                    to="/notifications"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Notifications
+                  </Link>
+                  
+                </>
               )}
             </div>
           </div>
@@ -237,6 +246,12 @@ const Navbar = () => {
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           Settings
+                        </Link>
+                        <Link
+                          to="/settings/notifications"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Notification Settings
                         </Link>
                       </>
                     )}
@@ -421,6 +436,18 @@ const Navbar = () => {
               className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
             >
               Messages
+            </Link>
+            <Link
+              to="/notifications"
+              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
+            >
+              Notifications
+            </Link>
+            <Link
+              to="/settings/notifications"
+              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
+            >
+              Notification Settings
             </Link>
 
             {/* Mobile Auth Section */}

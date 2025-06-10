@@ -14,7 +14,7 @@ const Users = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminUsers', page, statusFilter, roleFilter],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token || !account) {
         throw new Error('Authentication required');
       }
@@ -38,7 +38,7 @@ const Users = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ userId, status }) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token || !account) {
         throw new Error('Authentication required');
       }

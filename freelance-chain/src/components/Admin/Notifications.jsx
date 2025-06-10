@@ -18,7 +18,7 @@ const Notifications = () => {
     // Fetch users for dropdown
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (!token) {
           console.warn("No token found, cannot fetch users for admin notifications.");
           return;

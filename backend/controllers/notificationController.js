@@ -89,4 +89,58 @@ exports.markAllAsRead = async (req, res) => {
       error: error.message
     });
   }
+};
+
+exports.getNotificationSettings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const settings = await notificationService.getUserNotificationSettings(userId);
+    
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: 'Notification settings not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Error in getNotificationSettings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch notification settings',
+      error: error.message
+    });
+  }
+};
+
+exports.updateNotificationSettings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const settings = req.body;
+
+    const updatedSettings = await notificationService.updateNotificationSettings(userId, settings);
+    
+    if (!updatedSettings) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to update notification settings'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: updatedSettings
+    });
+  } catch (error) {
+    console.error('Error in updateNotificationSettings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update notification settings',
+      error: error.message
+    });
+  }
 }; 

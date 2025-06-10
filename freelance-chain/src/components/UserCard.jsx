@@ -1,6 +1,7 @@
 import React from 'react';
 import Avatar from './Avatar';
 import { cn } from '../lib/utils';
+import { Link } from 'react-router-dom';
 
 const UserCard = ({
   user,
@@ -21,9 +22,13 @@ const UserCard = ({
       )}
       onClick={onClick}
     >
-      <div className="relative shrink-0">
+      <Link 
+        to={`/profile/public/${user._id}`}
+        className="relative shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Avatar 
-          src={user.profilePicture} 
+          src={`http://localhost:5000${user.profileImage}`} 
           alt={user.name || 'User'} 
           className="w-10 h-10"
         />
@@ -31,16 +36,20 @@ const UserCard = ({
         {user.status === 'online' && (
           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
         )}
-      </div>
+      </Link>
       
       <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex justify-between items-baseline gap-2">
-          <h3 className={cn(
-            "font-heading text-sm md:text-base truncate",
-            selected ? "text-accent font-bold" : "text-gray-800 font-medium"
-          )}>
+          <Link 
+            to={`/profile/public/${user._id}`}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "font-heading text-sm md:text-base truncate hover:underline",
+              selected ? "text-accent font-bold" : "text-gray-800 font-medium"
+            )}
+          >
             {user.name || 'Unknown User'}
-          </h3>
+          </Link>
           {timestamp && (
             <span className={cn(
               "text-xs shrink-0",

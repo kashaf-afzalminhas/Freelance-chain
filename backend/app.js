@@ -117,6 +117,7 @@ app.use('/bids', bidRoutes);
 app.use('/contracts', contractRoutes);
 app.use('/work', workRoutes);
 app.use('/saved-jobs', require('./routes/savedJobs'));
+app.use('/notifications', notificationRoutes);
 
 // Admin routes - Mount at /api/admin
 app.use('/api/admin', require('./routes/adminRoutes'));
@@ -128,7 +129,6 @@ app.use('/api/*', (req, res) => {
         error: 'API endpoint not found'
     });
 });
-app.use('/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

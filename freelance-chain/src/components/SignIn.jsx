@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../services/api';
 
 const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
 
@@ -20,7 +20,7 @@ const SignIn = () => {
 
         try {
             // Clear any existing session data
-            localStorage.removeItem('token');
+            localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             localStorage.removeItem('userId');
             localStorage.removeItem('isAdmin');
@@ -43,7 +43,7 @@ const SignIn = () => {
             const isAdminWallet = walletAddress === ADMIN_WALLET_ADDRESS.toLowerCase();
 
             // Step 1: Request nonce from the backend
-            const nonceResponse = await axios.post('http://localhost:5000/auth/metamask/request', {
+            const nonceResponse = await api.post('/auth/metamask/request', {
                 walletAddress: walletAddress
             });
 
@@ -56,7 +56,7 @@ const SignIn = () => {
                 });
 
                 // Verify the signature and get token
-                const verifyResponse = await axios.post('http://localhost:5000/auth/metamask/verify', {
+                const verifyResponse = await api.post('/auth/metamask/verify', {
                     walletAddress: walletAddress,
                     signature: signature,
                     isAdmin: isAdminWallet
@@ -65,7 +65,7 @@ const SignIn = () => {
                 const { token, user } = verifyResponse.data;
 
                 // Save token and user data to localStorage
-                localStorage.setItem('token', token);
+                localStorage.setItem('authToken', token);
                 localStorage.setItem('user', JSON.stringify(user));
                 localStorage.setItem('userId', user._id);
 
@@ -73,11 +73,7 @@ const SignIn = () => {
                     localStorage.setItem('isAdmin', 'true');
                     // Verify admin status with backend
                     try {
-                        const adminResponse = await axios.get('http://localhost:5000/api/admin/verify', {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            },
+                        const adminResponse = await api.get('/admin/verify', {
                             params: {
                                 walletAddress: walletAddress
                             }

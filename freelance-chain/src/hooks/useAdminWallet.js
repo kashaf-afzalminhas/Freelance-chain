@@ -27,7 +27,7 @@ export const useAdminWallet = () => {
         
         if (isAdminWallet) {
           // Verify admin status with backend
-          const token = localStorage.getItem('token');
+          const token = localStorage.getItem('authToken');
           if (token) {
             const response = await axios.get('http://localhost:5000/api/admin/verify', {
               headers: {

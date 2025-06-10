@@ -9,10 +9,15 @@ const Contracts = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminContracts', page, statusFilter],
     queryFn: async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
       const response = await axios.get(`http://localhost:5000/api/admin/contracts`, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          'Authorization': `Bearer ${token}`
         },
         params: {
           page,

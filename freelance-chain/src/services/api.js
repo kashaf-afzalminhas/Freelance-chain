@@ -24,7 +24,27 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    if (error.response?.status === 401) {
+      // Clear auth data and redirect to login
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('isAdmin');
+      
+      // Only redirect if not already on the signin page
+      if (!window.location.pathname.includes('/signin')) {
+        window.location.href = '/signin';
+      }
+    }
+    
+    // Log the error for debugging
+    console.error('API Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      url: error.config?.url
+    });
+    
     return Promise.reject(error);
   }
 );
@@ -367,7 +387,7 @@ export const jobService = {
       console.error('Error fetching my jobs:', error);
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.location.href = '/signin';
       }
       throw error.response?.data || error.message;
     }

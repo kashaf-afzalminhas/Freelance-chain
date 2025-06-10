@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { contractService } from '../services/ContractService';
+import { api } from '../services/api';
 import { toast } from 'sonner';
+import { useAuth } from '../AuthContext';
 
 const ContractContext = createContext();
 
@@ -10,37 +11,35 @@ export const ContractProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { clearAuthData } = useAuth();
 
   const fetchContracts = useCallback(async (showToast = true) => {
     try {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found');
-        throw new Error('Authentication required');
-      }
-
       console.log('Fetching contracts...');
-      const response = await contractService.getUserContracts();
+      const response = await api.get('/contracts/user');
       console.log('Contracts response:', response);
 
-      if (!response.success) {
-        console.error('Failed response:', response);
-        throw new Error(response.error || 'Failed to fetch contracts');
+      if (!response.data) {
+        throw new Error('No data received from server');
       }
 
-      console.log('Setting contracts:', response.data);
-      setContracts(response.data || []);
-      return response.data;
+      // Ensure contracts is always an array
+      const contractsData = Array.isArray(response.data) ? response.data : 
+                          Array.isArray(response.data.contracts) ? response.data.contracts : 
+                          [];
+      
+      console.log('Setting contracts:', contractsData);
+      setContracts(contractsData);
+      return contractsData;
     } catch (error) {
       console.error('Failed to fetch contracts:', error);
       setError(error.message);
       if (error.response?.status === 401) {
         console.log('Unauthorized, redirecting to login');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        clearAuthData();
         navigate('/signin');
       }
       if (showToast) {
@@ -50,17 +49,16 @@ export const ContractProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [navigate, clearAuthData]);
 
   const getContract = useCallback(async (contractId) => {
     try {
       console.log('Fetching contract:', contractId);
-      const response = await contractService.getContract(contractId);
+      const response = await api.get(`/contracts/${contractId}`);
       console.log('Contract response:', response);
 
-      if (!response.success) {
-        console.error('Failed response:', response);
-        throw new Error(response.error || 'Failed to fetch contract');
+      if (!response.data) {
+        throw new Error('No data received from server');
       }
       
       // Update the contract in the local state
@@ -89,31 +87,31 @@ export const ContractProvider = ({ children }) => {
       setError(null);
       
       console.log('Signing contract:', contractId, 'with address:', signerAddress);
-      const result = await contractService.signContract(contractId, signerAddress);
-      console.log('Sign contract response:', result);
+      const response = await api.post(`/contracts/${contractId}/sign`, {
+        signerAddress
+      });
+      console.log('Sign contract response:', response);
 
-      if (!result.success) {
-        console.error('Failed response:', result);
-        throw new Error(result.error || 'Failed to sign contract');
+      if (!response.data) {
+        throw new Error('No data received from server');
       }
       
       // Update the contract in the list with new state
       setContracts(prevContracts => {
         const newContracts = prevContracts.map(c => 
-          c._id === contractId ? result.data : c
+          c._id === contractId ? response.data : c
         );
         console.log('Updated contracts after signing:', newContracts);
         return newContracts;
       });
       
       toast.success('Contract signed successfully');
-      return result.data;
+      return response.data;
     } catch (err) {
       console.error('Sign contract error:', err);
       if (err.response?.status === 401) {
         console.log('Unauthorized, redirecting to login');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        clearAuthData();
         navigate('/signin');
       }
       setError(err.message);
@@ -126,13 +124,7 @@ export const ContractProvider = ({ children }) => {
 
   // Initial fetch of contracts
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    console.log('Initial contract fetch - token exists:', !!token);
-    if (token) {
-      fetchContracts(false).catch(console.error);
-    } else {
-      setLoading(false);
-    }
+    fetchContracts(false).catch(console.error);
   }, [fetchContracts]);
 
   const contextValue = {
@@ -153,4 +145,10 @@ export const ContractProvider = ({ children }) => {
   );
 };
 
-export const useContracts = () => useContext(ContractContext);
+export const useContracts = () => {
+  const context = useContext(ContractContext);
+  if (!context) {
+    throw new Error('useContracts must be used within a ContractProvider');
+  }
+  return context;
+};
