@@ -1,22 +1,47 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { toast } from 'sonner';
 import { useAuth } from '../AuthContext';
 
 const ContractContext = createContext();
 
+// List of public paths that don't require authentication
+const publicPaths = ['/', '/signin', '/signup', '/jobs', '/browse-projects', '/jobs/', '/projects/'];
+
 export const ContractProvider = ({ children }) => {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { clearAuthData } = useAuth();
 
-  const fetchContracts = useCallback(async (showToast = true) => {
+  const isPublicRoute = useCallback(() => {
+    return publicPaths.some(path => location.pathname.startsWith(path));
+  }, [location.pathname]);
+
+  const validateToken = useCallback(() => {
+    const token = localStorage.getItem('authToken');
+    if (!token && !isPublicRoute()) {
+      throw new Error('No authentication token found');
+    }
+    return token;
+  }, [isPublicRoute]);
+
+  const fetchContracts = useCallback(async (showToast = true, retryCount = 0) => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Skip token validation for public routes
+      if (isPublicRoute()) {
+        setLoading(false);
+        return [];
+      }
+      
+      // Validate token before making request
+      validateToken();
       
       console.log('Fetching contracts...');
       const response = await api.get('/contracts/user');
@@ -36,12 +61,23 @@ export const ContractProvider = ({ children }) => {
       return contractsData;
     } catch (error) {
       console.error('Failed to fetch contracts:', error);
-      setError(error.message);
-      if (error.response?.status === 401) {
+      
+      // Handle authentication errors
+      if (error.response?.status === 401 && !isPublicRoute()) {
         console.log('Unauthorized, redirecting to login');
         clearAuthData();
         navigate('/signin');
+        return [];
       }
+
+      // Retry logic for network errors
+      if (retryCount < 3 && (error.message.includes('Network Error') || error.response?.status >= 500)) {
+        console.log(`Retrying fetch contracts (attempt ${retryCount + 1})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return fetchContracts(showToast, retryCount + 1);
+      }
+
+      setError(error.message);
       if (showToast) {
         toast.error('Failed to fetch contracts: ' + error.message);
       }
@@ -49,10 +85,18 @@ export const ContractProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, clearAuthData]);
+  }, [navigate, clearAuthData, validateToken, isPublicRoute]);
 
-  const getContract = useCallback(async (contractId) => {
+  const getContract = useCallback(async (contractId, retryCount = 0) => {
     try {
+      // Skip token validation for public routes
+      if (isPublicRoute()) {
+        return null;
+      }
+
+      // Validate token before making request
+      validateToken();
+
       console.log('Fetching contract:', contractId);
       const response = await api.get(`/contracts/${contractId}`);
       console.log('Contract response:', response);
@@ -76,15 +120,39 @@ export const ContractProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch contract:', error);
+
+      // Handle authentication errors
+      if (error.response?.status === 401 && !isPublicRoute()) {
+        console.log('Unauthorized, redirecting to login');
+        clearAuthData();
+        navigate('/signin');
+        throw error;
+      }
+
+      // Retry logic for network errors
+      if (retryCount < 3 && (error.message.includes('Network Error') || error.response?.status >= 500)) {
+        console.log(`Retrying fetch contract (attempt ${retryCount + 1})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return getContract(contractId, retryCount + 1);
+      }
+
       toast.error('Failed to fetch contract details: ' + error.message);
       throw error;
     }
-  }, []);
+  }, [navigate, clearAuthData, validateToken, isPublicRoute]);
 
-  const signContract = async (contractId, signerAddress) => {
+  const signContract = async (contractId, signerAddress, retryCount = 0) => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Skip token validation for public routes
+      if (isPublicRoute()) {
+        return null;
+      }
+
+      // Validate token before making request
+      validateToken();
       
       console.log('Signing contract:', contractId, 'with address:', signerAddress);
       const response = await api.post(`/contracts/${contractId}/sign`, {
@@ -107,16 +175,27 @@ export const ContractProvider = ({ children }) => {
       
       toast.success('Contract signed successfully');
       return response.data;
-    } catch (err) {
-      console.error('Sign contract error:', err);
-      if (err.response?.status === 401) {
+    } catch (error) {
+      console.error('Sign contract error:', error);
+
+      // Handle authentication errors
+      if (error.response?.status === 401 && !isPublicRoute()) {
         console.log('Unauthorized, redirecting to login');
         clearAuthData();
         navigate('/signin');
+        throw error;
       }
-      setError(err.message);
-      toast.error('Failed to sign contract: ' + err.message);
-      throw err;
+
+      // Retry logic for network errors
+      if (retryCount < 3 && (error.message.includes('Network Error') || error.response?.status >= 500)) {
+        console.log(`Retrying sign contract (attempt ${retryCount + 1})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))); // Exponential backoff
+        return signContract(contractId, signerAddress, retryCount + 1);
+      }
+
+      setError(error.message);
+      toast.error('Failed to sign contract: ' + error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -124,8 +203,16 @@ export const ContractProvider = ({ children }) => {
 
   // Initial fetch of contracts
   useEffect(() => {
-    fetchContracts(false).catch(console.error);
-  }, [fetchContracts]);
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetchContracts(false).catch(console.error);
+    } else if (!isPublicRoute()) {
+      setLoading(false);
+      navigate('/signin');
+    } else {
+      setLoading(false);
+    }
+  }, [fetchContracts, navigate, isPublicRoute]);
 
   const contextValue = {
     contracts,

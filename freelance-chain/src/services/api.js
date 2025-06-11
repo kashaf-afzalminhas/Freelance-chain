@@ -3,6 +3,9 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
 console.log('API_URL used in api.js:', API_URL);
 
+// List of public paths that don't require authentication
+const publicPaths = ['/', '/signin', '/signup', '/jobs', '/browse-projects', '/jobs/', '/projects/'];
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -30,14 +33,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth data and redirect to login
+      // Clear auth data
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       localStorage.removeItem('userId');
       localStorage.removeItem('isAdmin');
       
-      // Only redirect if not already on the signin page
-      if (!window.location.pathname.includes('/signin')) {
+      // Only redirect if not on a public route
+      const currentPath = window.location.pathname;
+      if (!publicPaths.some(path => currentPath.startsWith(path))) {
         window.location.href = '/signin';
       }
     }

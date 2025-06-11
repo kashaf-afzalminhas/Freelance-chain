@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { projectService } from '../../../services/api';
+import { api } from '../../../services/api';
 
 const BrowseProjects = () => {
   const [projects, setProjects] = useState([]);
@@ -17,12 +17,12 @@ const BrowseProjects = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const data = await projectService.getAllProjects();
-        console.log('Fetched projects:', data); // Debug log
-        setProjects(data);
+        const response = await api.get('/projects');
+        console.log('Fetched projects:', response.data);
+        setProjects(response.data);
       } catch (err) {
+        console.error('Error fetching projects:', err);
         setError(err.message);
-        console.error('Error fetching projects:', err); // Debug log
       } finally {
         setLoading(false);
       }
@@ -257,23 +257,11 @@ const BrowseProjects = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </button>
-                          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                            {project.media.map((_, index) => (
-                              <div
-                                key={index}
-                                className={`w-2 h-2 rounded-full ${
-                                  index === (currentSlide[project._id] || 0)
-                                    ? 'bg-white'
-                                    : 'bg-white bg-opacity-50'
-                                }`}
-                              />
-                            ))}
-                          </div>
                         </>
                       )}
                     </>
                   ) : (
-                    <div className="h-full bg-gray-100 flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
                       <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -281,57 +269,23 @@ const BrowseProjects = () => {
                   )}
                 </div>
 
-                <div className="p-6">
-                  {/* Project Title and Status */}
-                  <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800 line-clamp-1">
-                      {project.title}
-                    </h2>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                {/* Project Info */}
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{project.title}</h3>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
                       {project.status}
                     </span>
                   </div>
-
-                  {/* Project Description */}
-                  <p className="text-gray-600 mb-4 line-clamp-2">
-                    {project.description}
-                  </p>
-
-                  {/* Project Details */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="font-medium mr-2">Category:</span>
-                      <span className="capitalize">{project.category}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="font-medium mr-2">Price:</span>
-                      <span>${project.price}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="font-medium mr-2">Posted by:</span>
-                      <span>{project.freelancerName}</span>
-                    </div>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <span className="font-medium mr-2">Posted:</span>
-                      <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">${project.price}</span>
                     <Link
                       to={`/projects/${project._id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      className="text-green-600 hover:text-green-700 font-medium"
                     >
-                      View Project
+                      View Details
                     </Link>
-                    <button
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Apply Now
-                    </button>
                   </div>
                 </div>
               </div>

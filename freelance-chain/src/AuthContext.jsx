@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { api } from './services/api';
 
 // Create context
-const AuthContext = createContext();
+export const AuthContext = createContext();
 
 // Custom hook for using auth context
-const useAuth = () => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -16,7 +16,7 @@ const useAuth = () => {
 };
 
 // Auth Provider component
-const AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [chatWithUser, setChatWithUser] = useState(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);
@@ -85,7 +85,7 @@ const AuthProvider = ({ children }) => {
         setIsAdmin(storedIsAdmin);
 
         if (!token) {
-          console.warn('No token found in localStorage');
+          console.log('No token found in localStorage - user is not authenticated');
           setCurrentUser(null);
           setIsLoading(false);
           return;
@@ -124,7 +124,12 @@ const AuthProvider = ({ children }) => {
           if (error.response?.status === 401) {
             clearAuthData();
             setError('Session expired. Please sign in again.');
-            navigate('/signin');
+            // Only redirect to signin if we're on a protected route
+            const currentPath = window.location.pathname;
+            const publicPaths = ['/', '/signin', '/signup', '/jobs', '/browse-projects', '/jobs/', '/projects/'];
+            if (!publicPaths.some(path => currentPath.startsWith(path))) {
+              navigate('/signin');
+            }
           } else {
             throw error;
           }
@@ -133,7 +138,12 @@ const AuthProvider = ({ children }) => {
         console.error('Error fetching current user:', error);
         setError(error.message);
         clearAuthData();
-        navigate('/signin');
+        // Only redirect to signin if we're on a protected route
+        const currentPath = window.location.pathname;
+        const publicPaths = ['/', '/signin', '/signup', '/jobs', '/browse-projects', '/jobs/', '/projects/'];
+        if (!publicPaths.some(path => currentPath.startsWith(path))) {
+          navigate('/signin');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -161,7 +171,3 @@ const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-// Named exports
-export { useAuth, AuthContext };
-export default AuthProvider;

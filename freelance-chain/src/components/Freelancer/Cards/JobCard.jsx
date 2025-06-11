@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, DollarSign,ThumbsDown, MapPin, Star, Briefcase, Heart, Bookmark } from 'lucide-react';
 import { api } from '../../../services/api';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
+import { useAuth } from '../../../AuthContext';
+import { useWeb3 } from '../../../context/Web3Context';
 
 export default function JobCard({
   _id,
@@ -16,19 +18,45 @@ export default function JobCard({
 }) {
   const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { currentUser } = useAuth();
+  const { isConnected, connectWallet } = useWeb3();
 
   useEffect(() => {
     const checkIfSaved = async () => {
+      // Only check saved status if user is authenticated and wallet is connected
+      if (!currentUser || !isConnected) {
+        setIsSaved(false);
+        return;
+      }
+
       try {
         const response = await api.get('/saved-jobs');
         const savedJobs = response.data;
         setIsSaved(savedJobs.some(job => job._id === _id));
       } catch (error) {
         console.error('Error checking saved status:', error);
+        setIsSaved(false);
       }
     };
     checkIfSaved();
-  }, [_id]);
+  }, [_id, currentUser, isConnected]);
+
+  const handleSaveClick = async (e) => {
+    e.preventDefault(); // Prevent navigation to job details
+    e.stopPropagation(); // Stop event bubbling
+
+    if (!currentUser) {
+      toast.error('Please sign in to save jobs');
+      return;
+    }
+
+    if (!isConnected) {
+      toast.error('Please connect your wallet to save jobs');
+      return;
+    }
+
+    await toggleSave();
+  };
 
   const toggleSave = async () => {
     if (loading) return;
@@ -54,9 +82,10 @@ export default function JobCard({
     <div className="bg-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow relative">
       <div className="absolute top-4 right-4 flex gap-2">
         <button 
-          onClick={toggleSave}
+          onClick={handleSaveClick}
           className={`${isSaved ? 'text-[#FFBA00]' : 'text-gray-600'} hover:text-[#FFBA00] transition`}
           disabled={loading}
+          title={!currentUser ? 'Sign in to save jobs' : !isConnected ? 'Connect wallet to save jobs' : (isSaved ? 'Remove from saved' : 'Save job')}
         >
           <Bookmark className="w-5 h-5" fill={isSaved ? '#FFBA00' : 'none'} />
         </button>

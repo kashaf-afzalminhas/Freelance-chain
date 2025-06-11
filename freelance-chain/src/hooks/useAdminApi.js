@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { useWeb3 } from '../context/Web3Context';
 
 const API_BASE_URL = 'http://localhost:5000/api/admin';
 
 export const useAdminApi = () => {
   const queryClient = useQueryClient();
+  const { account } = useWeb3();
 
   // Helper function to get request config
   const getRequestConfig = (method = 'get', data = null) => {
@@ -14,7 +16,9 @@ export const useAdminApi = () => {
       throw new Error('No authentication token found');
     }
 
-    const walletAddress = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
+    if (!account) {
+      throw new Error('No wallet connected');
+    }
 
     const config = {
       method,
@@ -26,9 +30,9 @@ export const useAdminApi = () => {
 
     // Add wallet address to request body for all requests
     if (method.toLowerCase() === 'get') {
-      config.params = { walletAddress };
+      config.params = { walletAddress: account.toLowerCase() };
     } else {
-      config.data = { walletAddress, ...(data || {}) };
+      config.data = { walletAddress: account.toLowerCase(), ...(data || {}) };
     }
 
     return config;

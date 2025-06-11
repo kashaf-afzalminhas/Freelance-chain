@@ -1,19 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { Web3Context } from './Web3Context';
 
-// Create context with default values
-export const Web3Context = createContext({
-  account: null,
-  provider: null,
-  signer: null,
-  network: null,
-  isConnected: false,
-  connectWallet: async () => {},
-  disconnectWallet: () => {},
-});
-
-// Separate provider component
-function Web3Provider({ children }) {
+export function Web3Provider({ children }) {
   const [account, setAccount] = useState(null);
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
@@ -111,16 +100,4 @@ function Web3Provider({ children }) {
       {children}
     </Web3Context.Provider>
   );
-}
-
-// Separate hook
-function useWeb3() {
-  const context = useContext(Web3Context);
-  if (context === undefined) {
-    throw new Error('useWeb3 must be used within a Web3Provider');
-  }
-  return context;
-}
-
-// Named exports
-export { Web3Provider, useWeb3 };
+} 

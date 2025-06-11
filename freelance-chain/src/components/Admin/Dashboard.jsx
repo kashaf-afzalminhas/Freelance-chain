@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAdminApi } from '../../hooks/useAdminApi';
+import { useWeb3 } from '../../context/Web3Context';
 import { 
   UsersIcon, 
   BriefcaseIcon, 
@@ -23,8 +24,22 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
 
 const Dashboard = () => {
   const { useDashboardStats } = useAdminApi();
+  const { isConnected, account } = useWeb3();
   const { data: stats, isLoading, error } = useDashboardStats();
 
+  // If wallet is not connected, show message
+  if (!isConnected || !account) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Wallet Not Connected</h2>
+          <p className="text-gray-600 mb-6">Please connect your wallet to view the dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If loading, show loading state
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -43,10 +58,11 @@ const Dashboard = () => {
     );
   }
 
+  // If error, show error state
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-600">Error loading dashboard statistics</p>
+        <p className="text-red-600">Error loading dashboard statistics: {error.message}</p>
       </div>
     );
   }
@@ -57,26 +73,26 @@ const Dashboard = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Active Users"
-          value={stats?.activeUsers || 0}
+          title="Total Users"
+          value={stats?.totalUsers || 0}
           icon={UsersIcon}
           color="bg-blue-500"
         />
         <StatCard
-          title="Open Jobs"
-          value={stats?.openJobs || 0}
+          title="Total Jobs"
+          value={stats?.totalJobs || 0}
           icon={BriefcaseIcon}
           color="bg-green-500"
         />
         <StatCard
-          title="Active Contracts"
-          value={stats?.activeContracts || 0}
+          title="Active Jobs"
+          value={stats?.activeJobs || 0}
           icon={ExclamationTriangleIcon}
           color="bg-yellow-500"
         />
         <StatCard
-          title="Total Projects"
-          value={stats?.totalProjects || 0}
+          title="Completed Contracts"
+          value={stats?.completedContracts || 0}
           icon={FlagIcon}
           color="bg-purple-500"
         />

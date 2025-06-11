@@ -8,6 +8,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = JSON.parse(localStorage.getItem('user'));
   const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const adminUser = JSON.parse(localStorage.getItem('adminUser'));
   const navigate = useNavigate();
 
   const toggleFindWork = () => {
@@ -33,9 +34,28 @@ const Navbar = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('userId');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('authToken');
     navigate('/signin');
     window.location.reload();
   };
+
+  const renderPublicNav = () => (
+    <>
+      <Link
+        to="/jobs"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        Browse Jobs
+      </Link>
+      <Link
+        to="/browse-projects"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        Browse Projects
+      </Link>
+    </>
+  );
 
   const renderClientNav = () => (
     <>
@@ -175,20 +195,23 @@ const Navbar = () => {
               </Link>
               
               {/* Role-specific navigation */}
-              {!isAdmin && (user && user.role === 'client' ? renderClientNav() : renderFreelancerNav())}
-
-              {/* Admin Navigation */}
-              {isAdmin && (
-                <Link
-                  to="/admin/dashboard"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  Admin Dashboard
-                </Link>
+              {user ? (
+                !isAdmin ? (
+                  user.role === 'client' ? renderClientNav() : renderFreelancerNav()
+                ) : (
+                  <Link
+                    to="/admin/dashboard"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )
+              ) : (
+                renderPublicNav()
               )}
 
               {/* Common Links */}
-              {!isAdmin && (
+              {user && !isAdmin && (
                 <>
                   <Link
                     to="/messages"
@@ -202,7 +225,6 @@ const Navbar = () => {
                   >
                     Notifications
                   </Link>
-                  
                 </>
               )}
             </div>
@@ -216,7 +238,7 @@ const Navbar = () => {
                   onClick={toggleProfile}
                   className="flex items-center text-sm text-green-900 hover:text-green-800"
                 >
-                  <span>Hello, {isAdmin ? 'Admin' : user.name}</span>
+                  <span>Hello, {isAdmin ? (adminUser?.name || 'Admin') : user.name}</span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className={`h-5 w-5 ml-2 transition-transform ${profileOpen ? "rotate-180" : ""}`}

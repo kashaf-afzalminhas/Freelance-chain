@@ -1,98 +1,57 @@
 import { useState, useEffect } from 'react';
-import { useWeb3 } from './useWeb3';
-import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import { useWeb3 } from '../context/Web3Context';
 
-const ADMIN_WALLET_ADDRESS = '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc';
+// Array of admin wallet addresses
+const ADMIN_WALLET_ADDRESSES = [
+  '0x3Ff804112919805fFB8968ad81dBb23b32e8F3f1',
+  '0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc'
+];
 
 export const useAdminWallet = () => {
-  const { account, connect, disconnect, isConnected } = useWeb3();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const { account, isConnected } = useWeb3();
+  const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true');
+  
   useEffect(() => {
+    if (!isConnected || !account) {
+      setIsAdmin(false);
+      localStorage.removeItem('isAdmin');
+      localStorage.removeItem('adminUser');
+      return;
+    }
+
     const checkAdminStatus = async () => {
-      if (!isConnected || !account) {
-        setIsAdmin(false);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        // Normalize addresses for comparison
-        const normalizedAdminAddress = ADMIN_WALLET_ADDRESS.toLowerCase();
-        const normalizedUserAddress = account.toLowerCase();
-
-        const isAdminWallet = normalizedUserAddress === normalizedAdminAddress;
-        
-        if (isAdminWallet) {
-          // Verify admin status with backend
-          const token = localStorage.getItem('authToken');
-          if (token) {
-            const response = await axios.get('http://localhost:5000/api/admin/verify', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              },
-              params: {
-                walletAddress: normalizedUserAddress
-              }
-            });
-
-            if (response.data.isAdmin) {
-              setIsAdmin(true);
-              localStorage.setItem('isAdmin', 'true');
-            } else {
-              setIsAdmin(false);
-              localStorage.removeItem('isAdmin');
-              toast.error('Access denied: Invalid admin wallet');
-              disconnect();
-            }
-          } else {
-            setIsAdmin(false);
-            localStorage.removeItem('isAdmin');
-            toast.error('Please sign in first');
-            disconnect();
-          }
-        } else {
-          setIsAdmin(false);
+      const normalizedUserAddress = account.toLowerCase().trim();
+      const isAdminWallet = ADMIN_WALLET_ADDRESSES.some(
+        adminAddress => adminAddress.toLowerCase().trim() === normalizedUserAddress
+      );
+      
+      // Only update state if it's different
+      if (isAdmin !== isAdminWallet) {
+        setIsAdmin(isAdminWallet);
+        if (!isAdminWallet) {
           localStorage.removeItem('isAdmin');
-          toast.error('Access denied: Invalid admin wallet');
-          disconnect();
+          localStorage.removeItem('adminUser');
         }
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
-        localStorage.removeItem('isAdmin');
-        toast.error('Error verifying admin status');
-        disconnect();
-      } finally {
-        setIsLoading(false);
       }
     };
 
     checkAdminStatus();
-  }, [account, isConnected, disconnect]);
+  }, [account, isConnected, isAdmin]);
 
   const connectAdminWallet = async () => {
-    try {
-      await connect();
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
-      toast.error('Failed to connect wallet');
-    }
+    // This is now handled by AdminAccessGuard
+    return null;
   };
 
   const disconnectAdminWallet = () => {
-    disconnect();
     setIsAdmin(false);
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminUser');
   };
 
   return {
     isAdmin,
-    isLoading,
     connectAdminWallet,
-    disconnectAdminWallet,
-    account
+    disconnectAdminWallet
   };
 }; 
