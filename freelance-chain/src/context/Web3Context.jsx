@@ -15,7 +15,7 @@ export const Web3Provider = ({ children }) => {
   // Initialize provider
   const initProvider = () => {
     if (window.ethereum) {
-      const web3Provider = new ethers.BrowserProvider(window.ethereum);
+      const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
       setProvider(web3Provider);
       return web3Provider;
     } else {
@@ -32,7 +32,7 @@ export const Web3Provider = ({ children }) => {
 
       // Request account access
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const signer = await provider.getSigner();
+      const signer = provider.getSigner();
       const network = await provider.getNetwork();
 
       // Update state
@@ -76,7 +76,7 @@ export const Web3Provider = ({ children }) => {
         const provider = initProvider();
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
-          const signer = await provider.getSigner();
+          const signer = provider.getSigner();
           const network = await provider.getNetwork();
           setAccount(accounts[0]);
           setSigner(signer);

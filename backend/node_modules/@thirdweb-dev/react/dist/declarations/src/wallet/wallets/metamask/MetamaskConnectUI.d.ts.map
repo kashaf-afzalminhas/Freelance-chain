@@ -1,0 +1,1 @@
+{"version":3,"file":"MetamaskConnectUI.d.ts","sourceRoot":"../../../../../../src/wallet/wallets/metamask","sources":["MetamaskConnectUI.tsx"],"names":[],"mappings":"AAAA,OAAO,EAAE,cAAc,EAAE,MAAM,0BAA0B,CAAC;AAM1D,OAAO,EAAE,cAAc,EAAE,MAAM,uBAAuB,CAAC;AAMvD,eAAO,MAAM,iBAAiB,UACrB,eAAe,cAAc,CAAC,GAAG;IACtC,gBAAgB,EAAE,eAAe,GAAG,iBAAiB,CAAC;CACvD,mDAgJF,CAAC"}

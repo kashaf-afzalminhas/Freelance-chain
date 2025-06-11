@@ -1,0 +1,8 @@
+import { SignerWallet } from "@thirdweb-dev/wallets";
+import { Signer } from "ethers";
+import { WalletConfig } from "@thirdweb-dev/react-core";
+/**
+ * @internal
+ */
+export declare const signerWallet: (signer: Signer) => WalletConfig<SignerWallet>;
+//# sourceMappingURL=signerWallet.d.ts.map

@@ -1,13 +1,26 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
-console.log('API_URL used in api.js:', API_URL);
-export const api = axios.create({  // Export the api object as a named export
-  baseURL: API_URL,
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 });
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized access
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      window.location.href = '/signin';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Add token to requests if it exists
 api.interceptors.request.use((config) => {
@@ -19,15 +32,6 @@ api.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
-
-// Add response interceptor for better error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
 
 // Users
 export const getAllUsers = () => api.get('/users/all');

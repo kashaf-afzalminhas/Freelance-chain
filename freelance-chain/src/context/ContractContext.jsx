@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useContract, useContractRead } from "@thirdweb-dev/react";
 import { contractService } from '../services/ContractService';
 import { toast } from 'sonner';
 
@@ -10,6 +11,9 @@ export const ContractProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  // Initialize Thirdweb contract
+  const { contract } = useContract(import.meta.env.VITE_CONTRACT_ADDRESS);
 
   const fetchContracts = useCallback(async (showToast = true) => {
     try {
@@ -31,9 +35,36 @@ export const ContractProvider = ({ children }) => {
         throw new Error(response.error || 'Failed to fetch contracts');
       }
 
-      console.log('Setting contracts:', response.data);
-      setContracts(response.data || []);
-      return response.data;
+      // Fetch blockchain state for each contract
+      const contractsWithBlockchainState = await Promise.all(
+        (response.data || []).map(async (contractData) => {
+          try {
+            if (contract && contractData.contractId) {
+              const blockchainState = await contract.call("getContract", [contractData.contractId]);
+              return {
+                ...contractData,
+                blockchainState: {
+                  status: ["created", "client_signed", "freelancer_signed", "work_submitted", "completed", "disputed"][blockchainState.status],
+                  clientApproved: blockchainState.clientApproved,
+                  freelancerApproved: blockchainState.freelancerApproved,
+                  workSubmissionHash: blockchainState.workSubmissionHash,
+                  bidAmount: blockchainState.bidAmount.toString(),
+                  deadline: new Date(blockchainState.deadline.toNumber() * 1000),
+                  fundsDeposited: blockchainState.fundsDeposited.toString()
+                }
+              };
+            }
+            return contractData;
+          } catch (err) {
+            console.error('Error fetching blockchain state:', err);
+            return contractData;
+          }
+        })
+      );
+
+      console.log('Setting contracts:', contractsWithBlockchainState);
+      setContracts(contractsWithBlockchainState);
+      return contractsWithBlockchainState;
     } catch (error) {
       console.error('Failed to fetch contracts:', error);
       setError(error.message);
@@ -50,7 +81,7 @@ export const ContractProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  }, [contract, navigate]);
 
   const getContract = useCallback(async (contractId) => {
     try {
@@ -61,6 +92,20 @@ export const ContractProvider = ({ children }) => {
       if (!response.success) {
         console.error('Failed response:', response);
         throw new Error(response.error || 'Failed to fetch contract');
+      }
+      
+      // Fetch blockchain state
+      if (contract && response.data.contractId) {
+        const blockchainState = await contract.call("getContract", [response.data.contractId]);
+        response.data.blockchainState = {
+          status: ["created", "client_signed", "freelancer_signed", "work_submitted", "completed", "disputed"][blockchainState.status],
+          clientApproved: blockchainState.clientApproved,
+          freelancerApproved: blockchainState.freelancerApproved,
+          workSubmissionHash: blockchainState.workSubmissionHash,
+          bidAmount: blockchainState.bidAmount.toString(),
+          deadline: new Date(blockchainState.deadline.toNumber() * 1000),
+          fundsDeposited: blockchainState.fundsDeposited.toString()
+        };
       }
       
       // Update the contract in the local state
@@ -81,7 +126,7 @@ export const ContractProvider = ({ children }) => {
       toast.error('Failed to fetch contract details: ' + error.message);
       throw error;
     }
-  }, []);
+  }, [contract]);
 
   const signContract = async (contractId, signerAddress) => {
     try {
@@ -153,4 +198,10 @@ export const ContractProvider = ({ children }) => {
   );
 };
 
-export const useContracts = () => useContext(ContractContext);
+export const useContracts = () => {
+  const context = useContext(ContractContext);
+  if (context === undefined) {
+    throw new Error('useContracts must be used within a ContractProvider');
+  }
+  return context;
+};

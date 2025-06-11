@@ -1,6 +1,7 @@
+// frontend/services/ContractService.js
+import { useContract } from "@thirdweb-dev/react";
+import { ethers } from "ethers";
 import { api } from './api';
-import { ethers } from 'ethers';
-import JobContractArtifact from '../../../contracts/build/contracts/JobContract.json';
 
 const getAuthConfig = () => {
   const token = localStorage.getItem('authToken');
@@ -15,64 +16,11 @@ const getAuthConfig = () => {
   };
 };
 
+export const useJobContract = () => {
+  return useContract(import.meta.env.VITE_CONTRACT_ADDRESS);
+};
+
 export const contractService = {
-  createContract: async (jobId, bidId, freelancerId, freelancerAddress, bidAmount, jobTitle, jobDescription, deadline) => {
-    try {
-      // 1. Create contract in backend
-      const response = await api.post('/contracts', {
-        jobId, 
-        bidId, 
-        freelancerId,
-        freelancerAddress,
-        bidAmount, 
-        jobTitle, 
-        jobDescription, 
-        deadline
-      }, getAuthConfig());
-
-      // 2. Deploy smart contract
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contractFactory = new ethers.ContractFactory(
-        JobContractArtifact.abi,
-        JobContractArtifact.bytecode,
-        signer
-      );
-
-      // Convert deadline to Unix timestamp
-      const deadlineUnix = Math.floor(new Date(deadline).getTime() / 1000);
-      
-      // Deploy contract
-      const contract = await contractFactory.deploy();
-      await contract.waitForDeployment();
-
-      // Create contract instance
-      const contractInstance = await contract.createContract(
-        freelancerAddress,
-        ethers.parseEther(bidAmount.toString()),
-        deadlineUnix,
-        jobTitle,
-        jobDescription
-      );
-      await contractInstance.wait();
-
-      // 3. Update backend with contract address
-      await api.put(`/contracts/${response.data._id}`, {
-        contractAddress: await contract.getAddress(),
-        transactionHash: contractInstance.hash
-      }, getAuthConfig());
-
-      return {
-        ...response.data,
-        contractAddress: await contract.getAddress(),
-        transactionHash: contractInstance.hash
-      };
-    } catch (error) {
-      console.error('Create contract error:', error);
-      throw error;
-    }
-  },
-
   getUserContracts: async () => {
     try {
       const response = await api.get('/contracts/user', getAuthConfig());
@@ -92,38 +40,150 @@ export const contractService = {
       throw error;
     }
   },
-  
+
+  createContract: async (jobId, bidId, freelancerId, freelancerAddress, bidAmount, jobTitle, jobDescription, deadline) => {
+    try {
+      const { contract } = useJobContract();
+      const deadlineUnix = Math.floor(new Date(deadline).getTime() / 1000);
+      
+      const tx = await contract.call("createContract", [
+        freelancerAddress,
+        ethers.utils.parseEther(bidAmount.toString()),
+        deadlineUnix,
+        jobTitle,
+        jobDescription
+      ]);
+      
+      const receipt = await tx.wait();
+      const contractId = receipt.events.find(e => e.event === "ContractCreated").args.contractId;
+
+      // Save to backend
+      const response = await api.post('/contracts', {
+        jobId, 
+        bidId, 
+        freelancerId,
+        freelancerAddress,
+        bidAmount, 
+        jobTitle, 
+        jobDescription, 
+        deadline,
+        contractId: contractId.toString()
+      }, getAuthConfig());
+
+      return {
+        ...response.data,
+        contractAddress: import.meta.env.VITE_CONTRACT_ADDRESS,
+        contractId: contractId.toString(),
+        transactionHash: tx.hash
+      };
+    } catch (error) {
+      console.error('Create contract error:', error);
+      throw error;
+    }
+  },
+
+  getContractState: async (contractId) => {
+    const { contract } = useJobContract();
+    try {
+      const contractData = await contract.call("getContract", [contractId]);
+      return {
+        client: contractData.client,
+        freelancer: contractData.freelancer,
+        bidAmount: ethers.utils.formatEther(contractData.bidAmount),
+        deadline: new Date(contractData.deadline.toNumber() * 1000),
+        jobTitle: contractData.jobTitle,
+        jobDescription: contractData.jobDescription,
+        status: ["created", "client_signed", "freelancer_signed", "work_submitted", "completed", "disputed"][contractData.status],
+        workSubmissionHash: contractData.workSubmissionHash,
+        fundsDeposited: ethers.utils.formatEther(contractData.fundsDeposited),
+        clientApproved: contractData.clientApproved,
+        freelancerApproved: contractData.freelancerApproved
+      };
+    } catch (error) {
+      console.error('Get contract state error:', error);
+      throw error;
+    }
+  },
+
   signContract: async (contractId, signerAddress) => {
     try {
-      // 1. Get contract details first
-      const contractDetails = await contractService.getContract(contractId);
-      
-      if (!contractDetails.contractAddress) {
-        throw new Error('Contract address not found');
-      }
-
-      // 2. Sign contract on blockchain
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(
-        contractDetails.contractAddress,
-        JobContractArtifact.abi,
-        signer
-      );
-
-      const tx = await contract.signContract(0);
+      const { contract } = useJobContract();
+      const tx = await contract.call("signContract", [contractId]);
       await tx.wait();
 
-      // 3. Update backend
-      const response = await api.post(
-        `/contracts/${contractId}/sign`,
-        { signerAddress },
-        getAuthConfig()
-      );
+      // Update backend
+      const response = await api.post(`/contracts/${contractId}/sign`, {
+        signerAddress
+      }, getAuthConfig());
 
       return response.data;
     } catch (error) {
       console.error('Sign contract error:', error);
+      throw error;
+    }
+  },
+
+  depositFunds: async (contractId, amount) => {
+    try {
+      const { contract } = useJobContract();
+      const tx = await contract.call("depositFunds", [contractId], {
+        value: ethers.utils.parseEther(amount.toString())
+      });
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Deposit funds error:', error);
+      throw error;
+    }
+  },
+
+  submitWork: async (contractId, workHash) => {
+    try {
+      const { contract } = useJobContract();
+      const tx = await contract.call("submitWork", [contractId, workHash]);
+      await tx.wait();
+      return true;
+    } catch (error) {
+      console.error('Submit work error:', error);
+      throw error;
+    }
+  },
+
+  approveWork: async (contractId) => {
+    try {
+      const { contract } = useJobContract();
+      const tx = await contract.call("approveWork", [contractId]);
+      await tx.wait();
+      return true;
+    } catch (error) {
+      console.error('Approve work error:', error);
+      throw error;
+    }
+  },
+
+  raiseDispute: async (contractId) => {
+    try {
+      const { contract } = useJobContract();
+      const disputeFee = await contract.call("disputeFee");
+      const tx = await contract.call("raiseDispute", [contractId], {
+        value: disputeFee
+      });
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error('Raise dispute error:', error);
+      throw error;
+    }
+  },
+
+  requestRefund: async (contractId) => {
+    try {
+      const { contract } = useJobContract();
+      const tx = await contract.call("requestRefund", [contractId]);
+      await tx.wait();
+      return true;
+    } catch (error) {
+      console.error('Request refund error:', error);
       throw error;
     }
   }

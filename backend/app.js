@@ -149,9 +149,16 @@ setupSocket(server);
 // Server startup
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
     console.log(`Blockchain connected to: ${ganacheUrl}`);
     console.log(`Allowed origins: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Please try a different port or kill the process using this port.`);
+        process.exit(1);
+    } else {
+        console.error('Server error:', err);
+    }
 });
 
 // Handle shutdown gracefully
