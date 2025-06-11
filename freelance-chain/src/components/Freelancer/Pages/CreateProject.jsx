@@ -140,7 +140,7 @@ const CreateProject = () => {
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price (in ETH)
+                Price (in USD)
               </label>
               <input
                 type="number"

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useContract, useContractRead } from "@thirdweb-dev/react";
 import { contractService } from '../services/ContractService';
 import { toast } from 'sonner';
 
@@ -12,8 +11,67 @@ export const ContractProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Initialize Thirdweb contract
-  const { contract } = useContract(import.meta.env.VITE_CONTRACT_ADDRESS);
+  const handleAuthError = useCallback(() => {
+    console.log('Unauthorized, redirecting to login');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    if (navigate) {
+      navigate('/signin');
+    }
+  }, [navigate]);
+
+  // Helper function to merge blockchain state with contract data
+  const mergeBlockchainState = useCallback((contract) => {
+    if (!contract || !contract.blockchainState) return contract;
+    
+    // Create a new object with the merged state
+    const mergedContract = {
+      ...contract,
+      // Directly use the backend-derived flags
+      clientApproved: contract.blockchainState.clientApproved,
+      freelancerApproved: contract.blockchainState.freelancerApproved,
+      // Use blockchain status as source of truth
+      status: contract.blockchainState.status,
+      // Preserve the original blockchain state
+      blockchainState: contract.blockchainState
+    };
+
+    console.log('Merged contract state:', {
+      contractId: contract._id,
+      original: {
+        clientApproved: contract.clientApproved,
+        freelancerApproved: contract.freelancerApproved,
+        status: contract.status
+      },
+      blockchain: {
+        clientApproved: contract.blockchainState.clientApproved,
+        freelancerApproved: contract.blockchainState.freelancerApproved,
+        status: contract.blockchainState.status
+      },
+      merged: {
+        clientApproved: mergedContract.clientApproved,
+        freelancerApproved: mergedContract.freelancerApproved,
+        status: mergedContract.status
+      }
+    });
+
+    return mergedContract;
+  }, []);
+
+  // Helper function to update contracts state with deep equality check
+  const updateContractsState = useCallback((newContract) => {
+    setContracts(prevContracts => {
+      const updated = prevContracts.map(c => 
+        c._id === newContract._id ? { ...newContract } : { ...c }
+      );
+      
+      // Deep equality check to prevent unnecessary re-renders
+      if (JSON.stringify(updated) === JSON.stringify(prevContracts)) {
+        return prevContracts;
+      }
+      return updated;
+    });
+  }, []);
 
   const fetchContracts = useCallback(async (showToast = true) => {
     try {
@@ -30,49 +88,17 @@ export const ContractProvider = ({ children }) => {
       const response = await contractService.getUserContracts();
       console.log('Contracts response:', response);
 
-      if (!response.success) {
-        console.error('Failed response:', response);
-        throw new Error(response.error || 'Failed to fetch contracts');
-      }
+      // Merge blockchain state with each contract
+      const mergedContracts = (response || []).map(mergeBlockchainState);
+      console.log('Merged contracts with blockchain state:', mergedContracts);
 
-      // Fetch blockchain state for each contract
-      const contractsWithBlockchainState = await Promise.all(
-        (response.data || []).map(async (contractData) => {
-          try {
-            if (contract && contractData.contractId) {
-              const blockchainState = await contract.call("getContract", [contractData.contractId]);
-              return {
-                ...contractData,
-                blockchainState: {
-                  status: ["created", "client_signed", "freelancer_signed", "work_submitted", "completed", "disputed"][blockchainState.status],
-                  clientApproved: blockchainState.clientApproved,
-                  freelancerApproved: blockchainState.freelancerApproved,
-                  workSubmissionHash: blockchainState.workSubmissionHash,
-                  bidAmount: blockchainState.bidAmount.toString(),
-                  deadline: new Date(blockchainState.deadline.toNumber() * 1000),
-                  fundsDeposited: blockchainState.fundsDeposited.toString()
-                }
-              };
-            }
-            return contractData;
-          } catch (err) {
-            console.error('Error fetching blockchain state:', err);
-            return contractData;
-          }
-        })
-      );
-
-      console.log('Setting contracts:', contractsWithBlockchainState);
-      setContracts(contractsWithBlockchainState);
-      return contractsWithBlockchainState;
+      setContracts(mergedContracts);
+      return mergedContracts;
     } catch (error) {
       console.error('Failed to fetch contracts:', error);
       setError(error.message);
       if (error.response?.status === 401) {
-        console.log('Unauthorized, redirecting to login');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        navigate('/signin');
+        handleAuthError();
       }
       if (showToast) {
         toast.error('Failed to fetch contracts: ' + error.message);
@@ -81,85 +107,75 @@ export const ContractProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [contract, navigate]);
+  }, [handleAuthError, mergeBlockchainState]);
 
   const getContract = useCallback(async (contractId) => {
     try {
       console.log('Fetching contract:', contractId);
       const response = await contractService.getContract(contractId);
-      console.log('Contract response:', response);
+      console.log('Contract response from backend:', response);
 
-      if (!response.success) {
-        console.error('Failed response:', response);
-        throw new Error(response.error || 'Failed to fetch contract');
+      if (!response) {
+        console.warn('No response from getContract for ID:', contractId);
+        return null;
       }
-      
-      // Fetch blockchain state
-      if (contract && response.data.contractId) {
-        const blockchainState = await contract.call("getContract", [response.data.contractId]);
-        response.data.blockchainState = {
-          status: ["created", "client_signed", "freelancer_signed", "work_submitted", "completed", "disputed"][blockchainState.status],
-          clientApproved: blockchainState.clientApproved,
-          freelancerApproved: blockchainState.freelancerApproved,
-          workSubmissionHash: blockchainState.workSubmissionHash,
-          bidAmount: blockchainState.bidAmount.toString(),
-          deadline: new Date(blockchainState.deadline.toNumber() * 1000),
-          fundsDeposited: blockchainState.fundsDeposited.toString()
-        };
-      }
-      
+
+      // Merge blockchain state with the contract
+      const mergedContract = mergeBlockchainState(response);
+      console.log('Merged contract with blockchain state:', mergedContract);
+
       // Update the contract in the local state
-      setContracts(prevContracts => {
-        const updatedContracts = prevContracts.map(c => 
-          c._id === contractId ? response.data : c
-        );
-        if (!prevContracts.find(c => c._id === contractId)) {
-          updatedContracts.push(response.data);
-        }
-        console.log('Updated contracts state:', updatedContracts);
-        return updatedContracts;
-      });
+      updateContractsState(mergedContract);
       
-      return response.data;
+      return mergedContract;
     } catch (error) {
       console.error('Failed to fetch contract:', error);
       toast.error('Failed to fetch contract details: ' + error.message);
       throw error;
     }
-  }, [contract]);
+  }, [mergeBlockchainState, updateContractsState]);
 
   const signContract = async (contractId, signerAddress) => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Signing contract:', contractId, 'with address:', signerAddress);
-      const result = await contractService.signContract(contractId, signerAddress);
-      console.log('Sign contract response:', result);
-
-      if (!result.success) {
-        console.error('Failed response:', result);
-        throw new Error(result.error || 'Failed to sign contract');
+      // Optimistic update
+      const optimisticContract = contracts.find(c => c._id === contractId);
+      if (optimisticContract) {
+        updateContractsState({
+          ...optimisticContract,
+          clientApproved: true,
+          status: 'ClientSigned'
+        });
       }
       
-      // Update the contract in the list with new state
-      setContracts(prevContracts => {
-        const newContracts = prevContracts.map(c => 
-          c._id === contractId ? result.data : c
-        );
-        console.log('Updated contracts after signing:', newContracts);
-        return newContracts;
-      });
-      
+      console.log('Signing contract:', contractId, 'with address:', signerAddress);
+      const result = await contractService.signContract(contractId, signerAddress);
+      console.log('Sign contract response (from backend):', result);
+
+      // Merge blockchain state with the signed contract
+      const mergedContract = mergeBlockchainState(result);
+      console.log('Merged contract after signing:', mergedContract);
+
+      // Update the contract in the list with the merged data
+      updateContractsState(mergedContract);
+
       toast.success('Contract signed successfully');
-      return result.data;
+      return mergedContract;
     } catch (err) {
       console.error('Sign contract error:', err);
+      // Revert optimistic update on error
+      const originalContract = contracts.find(c => c._id === contractId);
+      if (originalContract) {
+        updateContractsState({
+          ...originalContract,
+          clientApproved: false,
+          status: 'Draft'
+        });
+      }
       if (err.response?.status === 401) {
-        console.log('Unauthorized, redirecting to login');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        navigate('/signin');
+        handleAuthError();
       }
       setError(err.message);
       toast.error('Failed to sign contract: ' + err.message);
@@ -168,6 +184,85 @@ export const ContractProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  const freelancerSignContract = async (contractId, signerAddress) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Optimistic update for freelancer signing
+      const optimisticContract = contracts.find(c => c._id === contractId);
+      if (optimisticContract) {
+        updateContractsState({
+          ...optimisticContract,
+          freelancerApproved: true,
+          // Assuming status becomes 'BothSigned' if client is already signed,
+          // otherwise 'FreelancerSigned'. The backend should handle this logic,
+          // but this optimistic update provides immediate feedback.
+          status: optimisticContract.clientApproved ? 'BothSigned' : 'FreelancerSigned'
+        });
+      }
+
+      console.log('Freelancer signing contract:', contractId, 'with address:', signerAddress);
+      // Call the backend service function for freelancer signing
+      // NOTE: This assumes contractService.freelancerSignContract exists or
+      // contractService.signContract handles freelancer role correctly.
+      // If your contractService only has one signContract function, ensure it
+      // determines the role based on the signer address.
+      const result = await contractService.freelancerSignContract(contractId, signerAddress);
+      console.log('Freelancer sign contract response (from backend):', result);
+
+      // Merge blockchain state with the signed contract
+      const mergedContract = mergeBlockchainState(result);
+      console.log('Merged contract after freelancer signing:', mergedContract);
+
+      // Update the contract in the list with the merged data
+      updateContractsState(mergedContract);
+
+      toast.success('Contract signed successfully as freelancer');
+      return mergedContract;
+    } catch (err) {
+      console.error('Freelancer sign contract error:', err);
+      // Revert optimistic update on error
+       const originalContract = contracts.find(c => c._id === contractId);
+      if (originalContract) {
+        updateContractsState(originalContract); // Revert to original state
+      }
+      if (err.response?.status === 401) {
+        handleAuthError();
+      }
+      setError(err.message);
+      toast.error('Failed to sign contract as freelancer: ' + err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const depositFunds = useCallback(async (contractId, amount) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await contractService.depositFunds(contractId, amount);
+      
+      // Merge blockchain state with the updated contract
+      const mergedContract = mergeBlockchainState(response);
+      
+      // Update the contract in the list with new state
+      updateContractsState(mergedContract);
+      
+      toast.success('Funds deposited successfully');
+      return mergedContract;
+    } catch (err) {
+      console.error('Deposit funds error:', err);
+      setError(err.message);
+      toast.error('Failed to deposit funds: ' + err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [mergeBlockchainState, updateContractsState]);
 
   // Initial fetch of contracts
   useEffect(() => {
@@ -185,6 +280,8 @@ export const ContractProvider = ({ children }) => {
     loading,
     error,
     signContract,
+    freelancerSignContract,
+    depositFunds,
     fetchContracts,
     getContract
   };
@@ -200,7 +297,7 @@ export const ContractProvider = ({ children }) => {
 
 export const useContracts = () => {
   const context = useContext(ContractContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useContracts must be used within a ContractProvider');
   }
   return context;

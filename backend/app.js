@@ -9,6 +9,7 @@ const setupSocket = require('./config/socket');
 const bidRoutes = require('./routes/bidRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const workRoutes = require('./routes/workRoutes');
+const ipfsRoutes = require('./routes/ipfsRoutes');
 const fs = require('fs');
 
 const app = express();
@@ -26,7 +27,7 @@ if (!fs.existsSync(bidsDir)) {
 }
 
 // Initialize Web3 with Ganache
-const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:8545';
+const ganacheUrl = process.env.GANACHE_URL || 'http://127.0.0.1:7545';
 const web3 = new Web3(new Web3.providers.HttpProvider(ganacheUrl));
 
 // Middleware
@@ -107,6 +108,7 @@ app.use('/bids', bidRoutes);
 app.use('/contracts', contractRoutes);
 app.use('/work', workRoutes);
 app.use('/saved-jobs', require('./routes/savedJobs'));
+app.use('/api/ipfs', ipfsRoutes);
 
 // API route not found handler
 app.use('/api/*', (req, res) => {
@@ -149,16 +151,9 @@ setupSocket(server);
 // Server startup
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
     console.log(`Blockchain connected to: ${ganacheUrl}`);
     console.log(`Allowed origins: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-}).on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use. Please try a different port or kill the process using this port.`);
-        process.exit(1);
-    } else {
-        console.error('Server error:', err);
-    }
 });
 
 // Handle shutdown gracefully

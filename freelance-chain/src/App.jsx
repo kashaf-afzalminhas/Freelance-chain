@@ -8,7 +8,7 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import AuthProvider, { AuthContext } from "./AuthContext";
 import { Web3Provider } from "./context/Web3Context";
 import { ContractProvider } from "./context/ContractContext";
-import ThirdwebProviderWrapper from './context/ThirdwebProvider';
+
 import './index.css';
 import './App.css';
 
@@ -50,79 +50,77 @@ const App = () => {
   const { currentUser, chatWithUser } = useContext(AuthContext);
 
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <Tooltip.Provider>
-          <ThirdwebProviderWrapper>
-            <AuthProvider>
-              <Web3Provider>
-                <ContractProvider>
-                  {/* Notification systems */}
-                  <HotToaster position="top-right" />
-                  <SonnerToaster richColors closeButton position="bottom-right" />
+    <QueryClientProvider client={queryClient}>
+      <Tooltip.Provider>
+        <AuthProvider>
+          <Web3Provider>
+            {/* Notification systems */}
+            <HotToaster position="top-right" />
+            <SonnerToaster richColors closeButton position="bottom-right" />
 
-                  <Routes>
-                    <Route element={<Layout />}>
-                      <Route path="/" element={<Homepage />} />
-                      <Route path="/signin" element={<SignIn />} />
-                      <Route path="/signup" element={<SignUp />} />
-                      <Route path="/role-selection" element={<RoleSelection />} />
-                      <Route path="/jobs" element={<JobListPage />} />
-                      <Route path="/createproject" element={<CreateProject />} />
-                      <Route path="/editproject/:id" element={<EditProject />} />
-                      <Route path="/projects/:id" element={<ProjectDetails />} />
-                      <Route path="/projectOverview" element={<ProjectOverview />} />
-                      <Route path="/projectDiscription" element={<ProjectDescription />} />
-                      <Route path="/projectGallery" element={<ProjectGallery />} />
-                      <Route path="/projectRequirement" element={<ProjectRequirements />} />
-                      <Route path="/projectPricing" element={<ProjectPricing />} />
-                      <Route path="/my-projects" element={<MyProjects />} />
-                      <Route path="/browse-projects" element={<BrowseProjects />} />
-                      <Route path="/job-list" element={<JobList />} />
-                      <Route path="/jobs/:id" element={<JobDetail />} />
-                      <Route path="/create-job" element={<CreateJob />} />
-                      <Route path="/my-jobs" element={<MyJobs />} />
-                      <Route path="/saved-jobs" element={<SavedJobsPage />} />
-                      <Route path="/bid-form" element={<BidForm />} />
-                      <Route path="/myproposals" element={<MyProposals/>} />
-                      <Route path="/contracts" element={<ContractsList />} />
-                      <Route path="/contracts/:contractId" element={<ContractView/>} />
-                      <Route path="/messages" element={<Index />} />
-                      <Route path="/messages/new" element={<Index />} />
-                      <Route
-                        path="/profile"
-                        element={
-                          <ProfileErrorBoundary>
-                            <Profile />
-                          </ProfileErrorBoundary>
-                        }
-                      />
-                      <Route
-                        path="/profile/public/:userId"
-                        element={
-                          <ProfileErrorBoundary>
-                            <PublicProfilePage />
-                          </ProfileErrorBoundary>
-                        }
-                      />
-                      <Route
-                        path="/profile/edit"
-                        element={
-                          <ProfileErrorBoundary>
-                            <EditProfilePage />
-                          </ProfileErrorBoundary>
-                        }
-                      />
-                      <Route path="/bids/:bidId" element={<BidDetails />} />
-                    </Route>
-                  </Routes>
-                </ContractProvider>
-              </Web3Provider>
-            </AuthProvider>
-          </ThirdwebProviderWrapper>
-        </Tooltip.Provider>
-      </QueryClientProvider>
-    </BrowserRouter>
+            <BrowserRouter>
+              <ContractProvider>
+                <Routes>
+                  <Route element={<Layout />}>
+                    <Route path="/" element={<Homepage />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/role-selection" element={<RoleSelection />} />
+                    <Route path="/jobs" element={<JobListPage />} />
+                    <Route path="/createproject" element={<CreateProject />} />
+                    <Route path="/editproject/:id" element={<EditProject />} />
+                    <Route path="/projects/:id" element={<ProjectDetails />} />
+                    <Route path="/projectOverview" element={<ProjectOverview />} />
+                    <Route path="/projectDiscription" element={<ProjectDescription />} />
+                    <Route path="/projectGallery" element={<ProjectGallery />} />
+                    <Route path="/projectRequirement" element={<ProjectRequirements />} />
+                    <Route path="/projectPricing" element={<ProjectPricing />} />
+                    <Route path="/my-projects" element={<MyProjects />} />
+                    <Route path="/browse-projects" element={<BrowseProjects />} />
+                    <Route path="/job-list" element={<JobList />} />
+                    <Route path="/jobs/:id" element={<JobDetail />} />
+                    <Route path="/create-job" element={<CreateJob />} />
+                    <Route path="/my-jobs" element={<MyJobs />} />
+                    <Route path="/saved-jobs" element={<SavedJobsPage />} />
+                    <Route path="/bid-form" element={<BidForm />} />
+                    <Route path="/myproposals" element={<MyProposals/>} />
+                    <Route path="/contracts" element={<ContractsList />} />
+                    <Route path="/contracts/:contractId" element={<ContractView/>} />
+                    <Route path="/messages" element={<Index />} />
+                    <Route path="/messages/new" element={<Index />} />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProfileErrorBoundary>
+                          <Profile />
+                        </ProfileErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/profile/public/:userId"
+                      element={
+                        <ProfileErrorBoundary>
+                          <PublicProfilePage />
+                        </ProfileErrorBoundary>
+                      }
+                    />
+                    <Route
+                      path="/profile/edit"
+                      element={
+                        <ProfileErrorBoundary>
+                          <EditProfilePage />
+                        </ProfileErrorBoundary>
+                      }
+                    />
+                    <Route path="/bids/:bidId" element={<BidDetails />} />
+                  </Route>
+                </Routes>
+              </ContractProvider>
+            </BrowserRouter>
+          </Web3Provider>
+        </AuthProvider>
+      </Tooltip.Provider>
+    </QueryClientProvider>
   );
 };
 

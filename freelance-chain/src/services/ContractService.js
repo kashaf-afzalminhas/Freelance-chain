@@ -1,7 +1,11 @@
-// frontend/services/ContractService.js
-import { useContract } from "@thirdweb-dev/react";
-import { ethers } from "ethers";
 import { api } from './api';
+import { ethers } from 'ethers';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../../utils/contract';
+import { createContractOnChain } from './ContractOnChainService';
+
+// Remove old ABI and address
+// const JobContractABI = [ ... ];
+// const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
 
 const getAuthConfig = () => {
   const token = localStorage.getItem('authToken');
@@ -16,48 +20,40 @@ const getAuthConfig = () => {
   };
 };
 
-export const useJobContract = () => {
-  return useContract(import.meta.env.VITE_CONTRACT_ADDRESS);
-};
-
 export const contractService = {
-  getUserContracts: async () => {
+  createContract: async (jobId, bidId, freelancerId, freelancerAddress, bidAmount, jobTitle, jobDescription, deadline, provider, signer) => {
     try {
-      const response = await api.get('/contracts/user', getAuthConfig());
-      return response.data;
-    } catch (error) {
-      console.error('Get user contracts error:', error);
-      throw error;
-    }
-  },
-
-  getContract: async (contractId) => {
-    try {
-      const response = await api.get(`/contracts/${contractId}`, getAuthConfig());
-      return response.data;
-    } catch (error) {
-      console.error('Get contract error:', error);
-      throw error;
-    }
-  },
-
-  createContract: async (jobId, bidId, freelancerId, freelancerAddress, bidAmount, jobTitle, jobDescription, deadline) => {
-    try {
-      const { contract } = useJobContract();
-      const deadlineUnix = Math.floor(new Date(deadline).getTime() / 1000);
-      
-      const tx = await contract.call("createContract", [
+      console.log('Creating contract with data:', {
+        jobId,
+        bidId,
+        freelancerId,
         freelancerAddress,
-        ethers.utils.parseEther(bidAmount.toString()),
-        deadlineUnix,
+        bidAmount,
         jobTitle,
-        jobDescription
-      ]);
-      
-      const receipt = await tx.wait();
-      const contractId = receipt.events.find(e => e.event === "ContractCreated").args.contractId;
+        jobDescription,
+        deadline,
+        provider: !!provider,
+        signer: !!signer
+      });
 
-      // Save to backend
+      if (!provider || !signer) {
+        throw new Error('Wallet not connected');
+      }
+
+      // First create contract on blockchain
+      const blockchainResult = await createContractOnChain({
+        freelancerAddress,
+        bidAmount,
+        deadline,
+        jobTitle,
+        jobDescription,
+        provider,
+        signer
+      });
+
+      console.log('Blockchain contract created:', blockchainResult);
+
+      // Then create contract in backend
       const response = await api.post('/contracts', {
         jobId, 
         bidId, 
@@ -67,123 +63,148 @@ export const contractService = {
         jobTitle, 
         jobDescription, 
         deadline,
-        contractId: contractId.toString()
+        contractId: blockchainResult.contractId,
+        contractAddress: CONTRACT_ADDRESS,
+        transactionHash: blockchainResult.txHash
       }, getAuthConfig());
 
-      return {
-        ...response.data,
-        contractAddress: import.meta.env.VITE_CONTRACT_ADDRESS,
-        contractId: contractId.toString(),
-        transactionHash: tx.hash
-      };
+      console.log('Contract creation response:', response.data);
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to create contract');
+      }
+
+      return response.data.data;
     } catch (error) {
       console.error('Create contract error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to create contract');
+      }
       throw error;
     }
   },
 
-  getContractState: async (contractId) => {
-    const { contract } = useJobContract();
+  getUserContracts: async () => {
     try {
-      const contractData = await contract.call("getContract", [contractId]);
-      return {
-        client: contractData.client,
-        freelancer: contractData.freelancer,
-        bidAmount: ethers.utils.formatEther(contractData.bidAmount),
-        deadline: new Date(contractData.deadline.toNumber() * 1000),
-        jobTitle: contractData.jobTitle,
-        jobDescription: contractData.jobDescription,
-        status: ["created", "client_signed", "freelancer_signed", "work_submitted", "completed", "disputed"][contractData.status],
-        workSubmissionHash: contractData.workSubmissionHash,
-        fundsDeposited: ethers.utils.formatEther(contractData.fundsDeposited),
-        clientApproved: contractData.clientApproved,
-        freelancerApproved: contractData.freelancerApproved
-      };
+      const response = await api.get('/contracts/user', getAuthConfig());
+      return response.data.data;
     } catch (error) {
-      console.error('Get contract state error:', error);
+      console.error('Get user contracts error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to fetch contracts');
+      }
       throw error;
     }
   },
 
+  getContract: async (contractId) => {
+    try {
+      const response = await api.get(`/contracts/${contractId}`, getAuthConfig());
+      console.log('Response from backend /contracts/:id:', response.data);
+
+      if (!response.data.success) {
+        throw new Error(response.data.error || 'Failed to fetch contract');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('Get contract error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to fetch contract');
+      }
+      throw error;
+    }
+  },
+  
   signContract: async (contractId, signerAddress) => {
     try {
-      const { contract } = useJobContract();
-      const tx = await contract.call("signContract", [contractId]);
-      await tx.wait();
-
-      // Update backend
-      const response = await api.post(`/contracts/${contractId}/sign`, {
-        signerAddress
-      }, getAuthConfig());
-
-      return response.data;
+      const response = await api.post(
+        `/contracts/${contractId}/sign`,
+        { signerAddress },
+        getAuthConfig()
+      );
+      return response.data.data;
     } catch (error) {
       console.error('Sign contract error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to sign contract');
+      }
       throw error;
     }
   },
 
   depositFunds: async (contractId, amount) => {
     try {
-      const { contract } = useJobContract();
-      const tx = await contract.call("depositFunds", [contractId], {
-        value: ethers.utils.parseEther(amount.toString())
-      });
-      await tx.wait();
-      return tx.hash;
+      const response = await api.post(
+        `/contracts/${contractId}/deposit`,
+        { amount },
+        getAuthConfig()
+      );
+      return response.data.data;
     } catch (error) {
       console.error('Deposit funds error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to deposit funds');
+      }
       throw error;
     }
   },
 
   submitWork: async (contractId, workHash) => {
     try {
-      const { contract } = useJobContract();
-      const tx = await contract.call("submitWork", [contractId, workHash]);
-      await tx.wait();
-      return true;
+      const response = await api.post(
+        `/contracts/${contractId}/submit-work`,
+        { workHash },
+        getAuthConfig()
+      );
+      return response.data.data;
     } catch (error) {
       console.error('Submit work error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to submit work');
+      }
       throw error;
     }
   },
 
   approveWork: async (contractId) => {
     try {
-      const { contract } = useJobContract();
-      const tx = await contract.call("approveWork", [contractId]);
-      await tx.wait();
-      return true;
+      const response = await api.post(
+        `/contracts/${contractId}/approve-work`,
+        {},
+        getAuthConfig()
+      );
+      return response.data.data;
     } catch (error) {
       console.error('Approve work error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to approve work');
+      }
       throw error;
     }
   },
 
-  raiseDispute: async (contractId) => {
+  releasePayment: async (contractId) => {
     try {
-      const { contract } = useJobContract();
-      const disputeFee = await contract.call("disputeFee");
-      const tx = await contract.call("raiseDispute", [contractId], {
-        value: disputeFee
-      });
-      await tx.wait();
-      return tx.hash;
+      const response = await api.post(
+        `/contracts/${contractId}/release-payment`,
+        {},
+        getAuthConfig()
+      );
+      return response.data.data;
     } catch (error) {
-      console.error('Raise dispute error:', error);
-      throw error;
-    }
-  },
-
-  requestRefund: async (contractId) => {
-    try {
-      const { contract } = useJobContract();
-      const tx = await contract.call("requestRefund", [contractId]);
-      await tx.wait();
-      return true;
-    } catch (error) {
-      console.error('Request refund error:', error);
+      console.error('Release payment error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to release payment');
+      }
       throw error;
     }
   }

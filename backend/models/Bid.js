@@ -53,6 +53,14 @@ const bidSchema = new mongoose.Schema({
     enum: ["pending", "accepted", "rejected", "withdrawn"], 
     default: "pending" 
   },
+  contractId: {
+    type: String,
+    required: false
+  },
+  transactionHash: {
+    type: String,
+    required: false
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 

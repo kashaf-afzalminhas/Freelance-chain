@@ -1,5 +1,5 @@
 // src/services/workService.js
-import * as api from './api';
+import { api } from './api';
 
 export const submitWork = async (data) => {
   const response = await api.post('/work', data);

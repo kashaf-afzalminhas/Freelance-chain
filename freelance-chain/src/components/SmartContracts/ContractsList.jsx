@@ -172,7 +172,7 @@ const ContractCard = ({ contract, account, navigate }) => {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-lg font-bold text-primary">{contract.bidAmount} ETH</p>
+          <p className="text-lg font-bold text-primary">{contract.bidAmount} VG</p>
           <p className="text-sm text-gray-500">
             Deadline: {new Date(contract.deadline).toLocaleDateString()}
           </p>

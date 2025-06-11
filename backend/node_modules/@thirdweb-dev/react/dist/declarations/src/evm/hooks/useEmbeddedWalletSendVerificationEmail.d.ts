@@ -1,6 +1,0 @@
-/**
- *
- * @walletConnection
- */
-export declare const useEmbeddedWalletSendVerificationEmail: () => (email: string) => Promise<import("@thirdweb-dev/wallets").SendEmailOtpReturnType>;
-//# sourceMappingURL=useEmbeddedWalletSendVerificationEmail.d.ts.map
