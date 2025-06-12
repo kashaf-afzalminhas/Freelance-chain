@@ -10,10 +10,17 @@ const Contract = require('../models/Contract');
 // const { createObjectCsvWriter } = require('csv-writer');
 const path = require('path');
 const notificationService = require('../services/notificationService');
+const Notification = require('../models/Notification');
 
-const adminControlle
+const adminController = {
   // Dashboard stats
-  getDashboardStats: async (req, res) =>iveJobs,
+  getDashboardStats: async (req, res) => {
+    try {
+      const [
+        totalUsers,
+        totalJobs,
+        totalContracts,
+        activeJobs,
         completedContracts
       ] = await Promise.all([
         User.countDocuments(),
