@@ -5,11 +5,12 @@ require('dotenv').config();
 const path = require('path');
 const http = require('http');
 const Web3 = require('web3');
-const setupSocket = require('./config/socket');
+const { initializeSocket } = require('./socket');
 const bidRoutes = require('./routes/bidRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 const workRoutes = require('./routes/workRoutes');
 const ipfsRoutes = require('./routes/ipfsRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const fs = require('fs');
 
 const app = express();
@@ -36,7 +37,10 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-admin-wallet'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
+   
 }));
 
 // Make Web3 available to routes
@@ -45,6 +49,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+// Add request logging middleware
 // Request logging middleware for debugging
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -78,6 +87,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
 }));
 
 // Database connection
+
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -109,6 +119,10 @@ app.use('/contracts', contractRoutes);
 app.use('/work', workRoutes);
 app.use('/saved-jobs', require('./routes/savedJobs'));
 app.use('/api/ipfs', ipfsRoutes);
+app.use('/notifications', notificationRoutes);
+
+// Admin routes - Mount at /api/admin
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // API route not found handler
 app.use('/api/*', (req, res) => {
@@ -145,8 +159,11 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Socket.IO setup
-setupSocket(server);
+// Initialize Socket.IO
+const io = initializeSocket(server);
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Server startup
 const PORT = process.env.PORT || 5000;

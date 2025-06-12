@@ -245,9 +245,12 @@ const MyJobs = () => {
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-xl font-bold text-secondary">{job.title}</h2>
-                  <span className="px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-full text-sm font-medium">
-                    Active
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-primary bg-opacity-10 text-primary rounded-full text-sm font-medium">
+                      Active
+                    </span>
+                    
+                  </div>
                 </div>
                 
                 <p className="text-gray-600 mb-6">{job.description}</p>

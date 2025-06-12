@@ -15,6 +15,7 @@ const {
 } = require('../utils/contractUtils');
 const { getProvider, getSigner } = require('../utils/web3Utils');
 const { validateAddress } = require('../utils/validationUtils');
+const User = require('../models/User');
 
 // Create a new contract
 router.post('/create', async (req, res) => {
@@ -204,6 +205,13 @@ router.post('/:id/resolve-dispute', async (req, res) => {
     try {
         const { id } = req.params;
         const { clientShare, freelancerShare } = req.body;
+        
+        // Check if user is admin
+        const user = await User.findById(req.user.id);
+        if (!user || !user.isAdmin) {
+            return res.status(403).json({ error: 'Only admins can resolve disputes' });
+        }
+
         const signer = await getSigner();
         
         await resolveDispute(id, clientShare, freelancerShare, signer);
@@ -217,6 +225,7 @@ router.post('/:id/resolve-dispute', async (req, res) => {
         contract.disputeResolution = {
             clientShare,
             freelancerShare,
+            resolvedBy: req.user.id,
             resolvedAt: new Date()
         };
         await contract.save();

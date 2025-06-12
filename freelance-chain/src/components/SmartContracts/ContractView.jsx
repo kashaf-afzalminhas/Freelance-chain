@@ -10,6 +10,8 @@ import { CONTRACT_ABI } from '../../../utils/contract'; // Adjust path if needed
 import { Download, FileText } from 'lucide-react';
 import { downloadFromIPFS, downloadWorkSubmission } from '../../services/ipfsService';
 import Modal from '../Modal'; // Updated import path
+import { useAuth } from '../../AuthContext';
+import { contractService } from '../../services/ContractService';
 
 // Helper function to validate addresses
 const validateAddress = (address) => {
@@ -30,7 +32,7 @@ const ContractView = () => {
   const { contractId } = useParams();
   const navigate = useNavigate();
   const { contracts, loading, error, signContract, getContract, fetchContracts } = useContracts();
-  const { account } = useWeb3();
+  const { account, signer } = useWeb3();
   const [activeTab, setActiveTab] = useState('details');
   const [localLoading, setLocalLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -41,6 +43,10 @@ const ContractView = () => {
   const [rejectLoading, setRejectLoading] = useState(false);
   const [disputeLoading, setDisputeLoading] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const { user } = useAuth();
+  const [showResolveModal, setShowResolveModal] = useState(false);
+  const [clientShare, setClientShare] = useState('');
+  const [freelancerShare, setFreelancerShare] = useState('');
 
   // Find the specific contract being viewed from the context
   const contract = useMemo(() => {
@@ -532,16 +538,42 @@ const ContractView = () => {
       toast.error('Please provide a reason for rejection.');
       return;
     }
+
+    if (!contract || !contract.contractAddress || contract.contractId === undefined) {
+      toast.error('Contract information is missing');
+      return;
+    }
+
+    if (!signer) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
     setRejectLoading(true);
     try {
-      // Call smart contract rejectWork function here
-      // Example: await contractInstance.rejectWork(contract.contractId, rejectReason);
-      toast.success('Work rejected.');
+      // Call the smart contract rejectWork function
+      const contractInstance = new ethers.Contract(
+        contract.contractAddress,
+        CONTRACT_ABI,
+        signer
+      );
+
+      const tx = await contractInstance.rejectWork(contract.contractId, rejectReason);
+      await tx.wait();
+
+      // Update the backend about the rejection
+      await contractService.rejectWork(contract.contractId, {
+        rejectionReason: rejectReason,
+        transactionHash: tx.hash
+      });
+
+      toast.success('Work rejected successfully');
       setShowRejectModal(false);
       setRejectReason('');
-      // Optionally refetch contract data
+      // Refetch contract data
       fetchContracts(false);
     } catch (err) {
+      console.error('Error rejecting work:', err);
       toast.error('Failed to reject work: ' + (err.message || 'Unknown error'));
     } finally {
       setRejectLoading(false);
@@ -552,13 +584,31 @@ const ContractView = () => {
   const handleRaiseDispute = async () => {
     setDisputeLoading(true);
     try {
-      // Call smart contract raiseDispute function here
-      // Example: await contractInstance.raiseDispute(contract.contractId, { value: disputeFee });
-      toast.success('Dispute raised.');
+      // Get contract instance
+      const contractInstance = new ethers.Contract(
+        contract.contractAddress,
+        CONTRACT_ABI,
+        signer
+      );
+
+      // Get dispute fee from contract
+      const disputeFee = await contractInstance.disputeFee();
+
+      // Call smart contract raiseDispute function with fee
+      const tx = await contractInstance.raiseDispute(contract.contractId, {
+        value: disputeFee
+      });
+      await tx.wait();
+
+      // Update backend
+      await contractService.raiseDispute(contract.contractId, tx.hash);
+
+      toast.success('Dispute raised successfully');
       setShowDisputeModal(false);
-      // Optionally refetch contract data
+      // Refetch contract data
       fetchContracts(false);
     } catch (err) {
+      console.error('Error raising dispute:', err);
       toast.error('Failed to raise dispute: ' + (err.message || 'Unknown error'));
     } finally {
       setDisputeLoading(false);
@@ -600,6 +650,31 @@ const ContractView = () => {
       toast.error('Failed to download file: ' + error.message);
     } finally {
       setDownloadLoading(false);
+    }
+  };
+
+  const handleResolveDispute = async () => {
+    if (!clientShare || !freelancerShare) {
+      toast.error('Please enter both client and freelancer shares');
+      return;
+    }
+
+    setResolveLoading(true);
+    try {
+      const response = await contractService.resolveDispute(contract.contractId, {
+        clientShare: ethers.utils.parseEther(clientShare),
+        freelancerShare: ethers.utils.parseEther(freelancerShare)
+      });
+      
+      toast.success('Dispute resolved successfully');
+      setShowResolveModal(false);
+      setClientShare('');
+      setFreelancerShare('');
+      onUpdate();
+    } catch (err) {
+      toast.error('Failed to resolve dispute: ' + (err.message || 'Unknown error'));
+    } finally {
+      setResolveLoading(false);
     }
   };
 
@@ -933,6 +1008,64 @@ const ContractView = () => {
             >
               {disputeLoading ? 'Raising...' : 'Raise Dispute'}
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Show dispute resolution option only for admins */}
+      {user?.isAdmin && contract.blockchainState?.status === 'Disputed' && (
+        <button
+          onClick={() => setShowResolveModal(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          disabled={resolveLoading}
+        >
+          Resolve Dispute
+        </button>
+      )}
+
+      {/* Resolve Dispute Modal */}
+      {showResolveModal && (
+        <Modal 
+          isOpen={showResolveModal}
+          onClose={() => setShowResolveModal(false)}
+          title="Resolve Dispute"
+        >
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Client Share (VG)</label>
+              <input
+                type="number"
+                value={clientShare}
+                onChange={(e) => setClientShare(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter amount"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Freelancer Share (VG)</label>
+              <input
+                type="number"
+                value={freelancerShare}
+                onChange={(e) => setFreelancerShare(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Enter amount"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowResolveModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResolveDispute}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+                disabled={resolveLoading}
+              >
+                {resolveLoading ? 'Resolving...' : 'Resolve Dispute'}
+              </button>
+            </div>
           </div>
         </Modal>
       )}

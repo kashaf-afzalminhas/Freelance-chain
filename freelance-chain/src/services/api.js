@@ -2,7 +2,11 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
 console.log('API_URL used in api.js:', API_URL);
-export const api = axios.create({  // Export the api object as a named export
+
+// List of public paths that don't require authentication
+const publicPaths = ['/', '/signin', '/signup', '/jobs', '/browse-projects', '/jobs/', '/projects/'];
+
+export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -15,6 +19,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Log the full URL being requested
+  console.log('Making request to:', `${config.baseURL}${config.url}`);
+  
   return config;
 }, (error) => {
   return Promise.reject(error);
@@ -24,7 +32,30 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    if (error.response?.status === 401) {
+      // Clear auth data
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('isAdmin');
+      
+      // Only redirect if not on a public route
+      const currentPath = window.location.pathname;
+      if (!publicPaths.some(path => currentPath.startsWith(path))) {
+        window.location.href = '/signin';
+      }
+    }
+    
+    // Log the error for debugging
+    console.error('API Error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      fullURL: `${error.config?.baseURL}${error.config?.url}`
+    });
+    
     return Promise.reject(error);
   }
 );
@@ -375,7 +406,7 @@ export const jobService = {
       console.error('Error fetching my jobs:', error);
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        window.location.href = '/signin';
       }
       throw error.response?.data || error.message;
     }
@@ -418,7 +449,13 @@ export const jobService = {
     } catch (error) {
       throw error.response?.data || error.message;
     }
-  }
+  },
+ 
+};
+
+// Notification settings
+export const updateNotificationSettings = async (settings) => {
+  return api.patch('/users/me/notification-settings', { notificationSettings: settings });
 };
 // Saved Jobs
 export const saveJob = (jobId) => api.post('/saved-jobs', { jobId });

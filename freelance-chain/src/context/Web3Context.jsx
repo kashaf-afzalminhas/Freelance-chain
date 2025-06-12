@@ -2,8 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { CONTRACT_ABI } from '../../utils/contract';
 
-// Create context
-const Web3Context = createContext();
+// Create context with default values
+export const Web3Context = createContext({
+  account: null,
+  provider: null,
+  signer: null,
+  network: null,
+  isConnected: false,
+  connectWallet: async () => {},
+  disconnectWallet: () => {},
+});
 
 // Provider component
 export const Web3Provider = ({ children }) => {
@@ -13,6 +21,7 @@ export const Web3Provider = ({ children }) => {
   const [signer, setSigner] = useState(null);
   const [chainId, setChainId] = useState(null);
   const [isAuthorizedSigner, setIsAuthorizedSigner] = useState(false);
+  const [network, setNetwork] = useState(null);
 
   // Define both hex and numeric versions
   const VANGUARD_CHAIN_ID_HEX = '0x13308'; // Hex string for MetaMask (78600)
@@ -96,6 +105,7 @@ export const Web3Provider = ({ children }) => {
       setSigner(signer);
       setIsConnected(true);
       setChainId(network.chainId); // Set chainId after successful connection/switch
+      setNetwork(network); // Set network state
 
       // Check authorization only after connected and on correct network
       checkSignerAuthorization(account);
@@ -113,6 +123,7 @@ export const Web3Provider = ({ children }) => {
     setSigner(null);
     setChainId(null);
     setIsAuthorizedSigner(false);
+    setNetwork(null);
   };
 
   useEffect(() => {
@@ -179,6 +190,16 @@ export const Web3Provider = ({ children }) => {
     };
   }, []); // Empty dependency array means this effect runs once on mount
 
+  const value = {
+    account,
+    provider,
+    signer,
+    network,
+    isConnected,
+    connectWallet,
+    disconnectWallet,
+  };
+
   return (
     <Web3Context.Provider
       value={{
@@ -191,13 +212,14 @@ export const Web3Provider = ({ children }) => {
         connectWallet,
         disconnectWallet,
         checkSignerAuthorization,
-        VANGUARD_CHAIN_ID_NUM // Export for external checks if needed
+        VANGUARD_CHAIN_ID_NUM, // Export for external checks if needed
+        network
       }}
     >
       {children}
     </Web3Context.Provider>
   );
-};
+}
 
 // Custom hook for easy access
 export const useWeb3 = () => {

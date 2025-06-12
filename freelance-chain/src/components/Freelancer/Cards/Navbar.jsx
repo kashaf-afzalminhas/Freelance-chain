@@ -7,6 +7,8 @@ const Navbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = localStorage.getItem('isAdmin') === 'true';
+  const adminUser = JSON.parse(localStorage.getItem('adminUser'));
   const navigate = useNavigate();
 
   const toggleFindWork = () => {
@@ -31,9 +33,29 @@ const Navbar = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('userId');
+    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminUser');
+    localStorage.removeItem('authToken');
     navigate('/signin');
     window.location.reload();
   };
+
+  const renderPublicNav = () => (
+    <>
+      <Link
+        to="/jobs"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        Browse Jobs
+      </Link>
+      <Link
+        to="/browse-projects"
+        className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+      >
+        Browse Projects
+      </Link>
+    </>
+  );
 
   const renderClientNav = () => (
     <>
@@ -173,15 +195,38 @@ const Navbar = () => {
               </Link>
               
               {/* Role-specific navigation */}
-              {user && user.role === 'client' ? renderClientNav() : renderFreelancerNav()}
+              {user ? (
+                !isAdmin ? (
+                  user.role === 'client' ? renderClientNav() : renderFreelancerNav()
+                ) : (
+                  <Link
+                    to="/admin/dashboard"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )
+              ) : (
+                renderPublicNav()
+              )}
 
               {/* Common Links */}
-              <Link
-                to="/messages"
-                className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                Messages
-              </Link>
+              {user && !isAdmin && (
+                <>
+                  <Link
+                    to="/messages"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Messages
+                  </Link>
+                  <Link
+                    to="/notifications"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Notifications
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -193,7 +238,7 @@ const Navbar = () => {
                   onClick={toggleProfile}
                   className="flex items-center text-sm text-green-900 hover:text-green-800"
                 >
-                  <span>Hello, {user.name}</span>
+                  <span>Hello, {isAdmin ? (adminUser?.name || 'Admin') : user.name}</span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className={`h-5 w-5 ml-2 transition-transform ${profileOpen ? "rotate-180" : ""}`}
@@ -210,18 +255,28 @@ const Navbar = () => {
 
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10">
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Profile
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Settings
-                    </Link>
+                    {!isAdmin && (
+                      <>
+                        <Link
+                          to="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Profile
+                        </Link>
+                        <Link
+                          to="/settings"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Settings
+                        </Link>
+                        <Link
+                          to="/settings/notifications"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Notification Settings
+                        </Link>
+                      </>
+                    )}
                     <button
                       onClick={handleSignOut}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -403,6 +458,18 @@ const Navbar = () => {
               className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
             >
               Messages
+            </Link>
+            <Link
+              to="/notifications"
+              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
+            >
+              Notifications
+            </Link>
+            <Link
+              to="/settings/notifications"
+              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
+            >
+              Notification Settings
             </Link>
 
             {/* Mobile Auth Section */}

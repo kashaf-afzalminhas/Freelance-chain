@@ -504,6 +504,38 @@ const raiseDispute = async (contractId, disputeFee, signer) => {
     }
 };
 
+// Add rejectWork function
+const rejectWork = async (contractId, rejectionReason, signer) => {
+    try {
+        // Get signer from centralized utility
+        const signerInstance = getSigner();
+        const provider = getProvider();
+
+        const contractWithSigner = new ethers.Contract(JobContractAddress, CONTRACT_ABI, signerInstance);
+
+        const id = typeof contractId === 'string' ? parseInt(contractId) : contractId;
+        if (isNaN(id)) throw new Error('Invalid contractId');
+
+        console.log('Rejecting work for contract ID:', id, 'with reason:', rejectionReason);
+        
+        // Call the smart contract's rejectWork function
+        const tx = await contractWithSigner.rejectWork(id, rejectionReason);
+
+        console.log('Waiting for transaction confirmation...');
+        const receipt = await provider.waitForTransaction(tx.hash);
+
+        if (receipt.status === 1) {
+            console.log('Work rejected successfully:', receipt.transactionHash);
+            return true;
+        } else {
+            throw new Error('Transaction failed');
+        }
+    } catch (error) {
+        console.error('Error rejecting work:', error);
+        throw error;
+    }
+};
+
 // *** ACTION REQUIRED: Add similar updates for resolveDispute and requestRefund if they exist ***
 // Also review the parameters for clientSignAndDeposit and raiseDispute to ensure they receive necessary amounts.
 
@@ -516,6 +548,7 @@ module.exports = {
     depositFunds,
     submitWork,
     approveWork,
-    raiseDispute
+    raiseDispute,
+    rejectWork
     // *** ACTION REQUIRED: Add resolveDispute and requestRefund to exports if implemented ***
 };

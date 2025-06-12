@@ -1,11 +1,11 @@
-
-
 import React, { useEffect, useState, useRef } from 'react';
 import ChatBubble from './ChatBubble';
 import MessageInput from './MessageInput';
 import TypingIndicator from './TypingIndicator';
 import { getMessagesByConversation, sendMessage, getUserById } from '../services/api';
 import { getSocket, sendSocketMessage } from '../services/socket';
+import { Link } from 'react-router-dom';
+import Avatar from './Avatar';
 
 const ChatWindow = ({ conversationId, currentUser, otherUser }) => {
   const [messages, setMessages] = useState([]);
@@ -132,11 +132,27 @@ const ChatWindow = ({ conversationId, currentUser, otherUser }) => {
     <div className="flex flex-col h-full bg-white rounded-lg shadow-sm overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-primary text-white flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white font-bold">
-          {userDetails.name?.charAt(0) || 'U'}
-        </div>
+        <Link 
+          to={`/profile/public/${otherUser._id}`}
+          className="relative shrink-0"
+        >
+          <Avatar 
+            src={`http://localhost:5000${userDetails.profileImage}`}
+            alt={userDetails.name || 'User'}
+            className="w-10 h-10"
+          />
+          {/* Online status indicator */}
+          {userDetails.status === 'online' && (
+            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </Link>
         <div>
-          <h2 className="font-heading text-lg font-bold">{userDetails.name || 'User'}</h2>
+          <Link 
+            to={`/profile/public/${otherUser._id}`}
+            className="font-heading text-lg font-bold hover:underline"
+          >
+            {userDetails.name || 'User'}
+          </Link>
           <p className="font-body text-sm text-white/90">
             {userDetails.role || 'N/A'} • {isTyping ? 'typing...' : 'online'}
           </p>

@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Client = require('../models/Client');
 const Freelancer = require('../models/Freelancer');
 const auth = require('../middleware/auth');
+const { ADMIN_WALLET_ADDRESSES } = require('../middleware/adminAuth');
 const crypto = require('crypto');
 const Web3 = require('web3');
 const router = express.Router();
@@ -11,6 +12,14 @@ const router = express.Router();
 const web3 = new Web3('https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID');
 // Generate a random nonce
 const generateNonce = () => crypto.randomBytes(16).toString('hex');
+
+// Helper function to check if a wallet is an admin
+const isAdminWallet = (walletAddress) => {
+    if (!walletAddress) return false;
+    return ADMIN_WALLET_ADDRESSES.some(
+        adminAddress => adminAddress.toLowerCase() === walletAddress.toLowerCase()
+    );
+};
 
 // MetaMask Login: Step 1 - Request Nonce
 router.post('/metamask/request', async (req, res) => {
@@ -21,11 +30,17 @@ router.post('/metamask/request', async (req, res) => {
     }
 
     try {
-        let user = await User.findOne({ walletAddress });
+        const normalizedAddress = walletAddress.toLowerCase();
+        let user = await User.findOne({ walletAddress: normalizedAddress });
 
         // If the user does not exist, create a new entry
         if (!user) {
-            user = new User({ walletAddress, nonce: generateNonce() });
+            user = new User({ 
+                walletAddress: normalizedAddress,
+                nonce: generateNonce(),
+                // Set role to admin if it's an admin wallet
+                role: isAdminWallet(normalizedAddress) ? 'admin' : undefined
+            });
             await user.save();
         } else {
             // Update the nonce for security
@@ -33,7 +48,7 @@ router.post('/metamask/request', async (req, res) => {
             await user.save();
         }
 
-        console.log('Nonce generated for:', walletAddress, user.nonce); // Debugging
+        console.log('Nonce generated for:', normalizedAddress, user.nonce); // Debugging
         res.status(200).json({ nonce: user.nonce });
     } catch (error) {
         console.error('Error in /metamask/request:', error); // Debugging
@@ -47,7 +62,7 @@ router.post('/metamask/verify', async (req, res) => {
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     console.log('Request headers:', req.headers);
 
-    const { walletAddress, signature } = req.body;
+    const { walletAddress, signature, isAdmin } = req.body;
 
     // Validate request body
     if (!walletAddress || !signature) {
@@ -65,8 +80,9 @@ router.post('/metamask/verify', async (req, res) => {
     }
 
     try {
-        console.log('Looking up user with wallet:', walletAddress.toLowerCase());
-        const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+        const normalizedAddress = walletAddress.toLowerCase();
+        console.log('Looking up user with wallet:', normalizedAddress);
+        let user = await User.findOne({ walletAddress: normalizedAddress });
         
         if (!user) {
             console.log('User not found in database');
@@ -79,7 +95,8 @@ router.post('/metamask/verify', async (req, res) => {
         console.log('Found user:', {
             id: user._id,
             walletAddress: user.walletAddress,
-            hasNonce: !!user.nonce
+            hasNonce: !!user.nonce,
+            role: user.role
         });
 
         if (!user.nonce) {
@@ -97,11 +114,11 @@ router.post('/metamask/verify', async (req, res) => {
             const recoveredAddress = web3.eth.accounts.recover(message, signature);
             console.log('Recovery results:', {
                 recoveredAddress,
-                expectedAddress: walletAddress.toLowerCase(),
-                match: recoveredAddress.toLowerCase() === walletAddress.toLowerCase()
+                expectedAddress: normalizedAddress,
+                match: recoveredAddress.toLowerCase() === normalizedAddress
             });
 
-            if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+            if (recoveredAddress.toLowerCase() !== normalizedAddress) {
                 console.log('Signature verification failed');
                 return res.status(401).json({ 
                     error: 'Invalid signature',
@@ -116,8 +133,21 @@ router.post('/metamask/verify', async (req, res) => {
             });
         }
 
+        // Check if this is an admin login attempt
+        if (isAdmin && isAdminWallet(normalizedAddress)) {
+            // Update user role to admin if not already
+            if (user.role !== 'admin') {
+                user.role = 'admin';
+                await user.save();
+            }
+        }
+
         // Generate JWT token
-        const token = jwt.sign({ userId: user._id, walletAddress }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ 
+            userId: user._id, 
+            walletAddress: user.walletAddress,
+            role: user.role 
+        }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         console.log('Verification successful, generating response');
         // Return token and user data
@@ -148,7 +178,7 @@ router.post('/check-wallet', async (req, res) => {
     }
   
     try {
-      const user = await User.findOne({ walletAddress });
+      const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
       res.status(200).json({ exists: !!user });
     } catch (error) {
       console.error('Check wallet error', error);
@@ -165,16 +195,17 @@ router.post('/check-wallet', async (req, res) => {
     }
   
     try {
+      const normalizedAddress = walletAddress.toLowerCase();
       // Check if the wallet address is already registered
-      const existingUser = await User.findOne({ walletAddress });
+      const existingUser = await User.findOne({ walletAddress: normalizedAddress });
       if (existingUser) {
         return res.status(400).json({ message: 'Wallet address is already registered' });
       }
   
       // Create a new user
-      console.log('Attempting to create new user with walletAddress:', walletAddress);
+      console.log('Attempting to create new user with walletAddress:', normalizedAddress);
       const user = new User({
-        walletAddress,
+        walletAddress: normalizedAddress,
         password, // In a real app, hash the password before saving
         nonce: generateNonce(), // Generate a nonce for MetaMask login
       });
@@ -244,5 +275,62 @@ router.get('/current-user', auth, (req, res) => {
     res.json(req.user); // The `auth` middleware adds `req.user`
 });
 
+// Admin login endpoint
+router.post('/admin/login', async (req, res) => {
+    try {
+        const { walletAddress } = req.body;
+
+        if (!walletAddress) {
+            return res.status(400).json({
+                success: false,
+                message: 'Wallet address is required'
+            });
+        }
+
+        // Normalize wallet address
+        const normalizedAddress = walletAddress.toLowerCase();
+
+        // Find user with admin role
+        const user = await User.findOne({
+            walletAddress: normalizedAddress,
+            role: 'admin'
+        });
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Access denied: Invalid admin wallet address or insufficient permissions'
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: user._id,
+                walletAddress: user.walletAddress,
+                role: user.role
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                _id: user._id,
+                walletAddress: user.walletAddress,
+                role: user.role,
+                name: user.name
+            }
+        });
+    } catch (error) {
+        console.error('Admin login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error during admin login'
+        });
+    }
+});
 
 module.exports = router;

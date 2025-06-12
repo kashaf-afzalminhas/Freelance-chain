@@ -54,7 +54,8 @@ const contractSchema = new mongoose.Schema({
             'work_submitted',
             'completed',
             'disputed',
-            'refunded'
+            'refunded',
+            'work_rejected'
         ],
         default: 'created'
     },
@@ -71,6 +72,12 @@ const contractSchema = new mongoose.Schema({
         required: true
     },
     workHash: {
+        type: String
+    },
+    rejectionReason: {
+        type: String
+    },
+    rejectionTransactionHash: {
         type: String
     },
     createdAt: {

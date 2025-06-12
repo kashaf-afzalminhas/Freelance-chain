@@ -1,47 +1,7 @@
-// import React, { useEffect, useRef } from 'react';
-// import { emitMessageRead } from '../socket';
-
-// const MessageList = ({ messages, currentUser, chatUsers }) => {
-//   const scrollRef = useRef();
-
-//   // Emit read receipts
-//   useEffect(() => {
-//     messages.forEach((msg) => {
-//       if (!msg.readBy.includes(currentUser._id)) {
-//         emitMessageRead(msg._id, currentUser._id);
-//       }
-//     });
-//   }, [messages, currentUser]);
-
-//   // Auto-scroll
-//   useEffect(() => {
-//     if (scrollRef.current) {
-//         setTimeout(() => {
-//             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-//         }, 100); // Add a slight delay to ensure DOM updates
-//     }
-//   }, [messages]);
-
-//   return (
-//     <div className="message-list">
-//       {messages.map((msg, index) => (
-//         <div
-//           key={`${msg._id}-${index}`}
-//           className={`message-item ${String(msg.senderId) === String(currentUser._id) ? 'sent' : 'received'}`}
-//         >
-//           <p>{msg.text || msg.content}</p>
-//           <span className="timestamp">{new Date(msg.timestamp || msg.createdAt).toLocaleTimeString()}</span>
-//         </div>
-//       ))}
-//       <div ref={scrollRef}></div>
-//     </div>
-//   );
-// };
-
-// export default MessageList;
-
 import React, { useEffect, useRef } from 'react';
 import { emitMessageRead } from '../socket';
+import { Link } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
 const MessageList = ({ messages, currentUser, chatUsers }) => {
   const scrollRef = useRef();
@@ -88,6 +48,11 @@ const MessageList = ({ messages, currentUser, chatUsers }) => {
     return user?.name || 'Unknown';
   };
 
+  const getSenderProfileImage = (senderId) => {
+    const user = chatUsers.find(user => user._id === senderId);
+    return user?.profileImage ? `http://localhost:5000${user.profileImage}` : null;
+  };
+
   return (
     <div className="flex flex-col space-y-3 p-4 overflow-y-auto h-full">
       {messages.map((msg, index) => {
@@ -105,9 +70,27 @@ const MessageList = ({ messages, currentUser, chatUsers }) => {
             ref={index === messages.length - 1 ? messagesEndRef : null}
           >
             {showSenderName && (
-              <span className="text-xs font-semibold text-gray-600 mb-1 font-heading">
-                {getSenderName(msg.senderId)}
-              </span>
+              <div className="flex items-center gap-2 mb-1">
+                <Link 
+                  to={`/profile/public/${msg.senderId}`}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  {getSenderProfileImage(msg.senderId) ? (
+                    <img 
+                      src={getSenderProfileImage(msg.senderId)} 
+                      alt={getSenderName(msg.senderId)}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center text-white text-xs">
+                      {getSenderName(msg.senderId).charAt(0)}
+                    </div>
+                  )}
+                  <span className="text-xs font-semibold text-gray-600 font-heading">
+                    {getSenderName(msg.senderId)}
+                  </span>
+                </Link>
+              </div>
             )}
             
             <div className={cn(

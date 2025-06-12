@@ -1,11 +1,12 @@
 import React, { useContext } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster as HotToaster } from "react-hot-toast";
 import { Toaster as SonnerToaster } from "sonner";
 import * as Tooltip from '@radix-ui/react-tooltip';
 
-import AuthProvider, { AuthContext } from "./AuthContext";
+import { AuthContext } from "./AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import { Web3Provider } from "./context/Web3Context";
 import { ContractProvider } from "./context/ContractContext";
 
@@ -43,8 +44,20 @@ import EditProfilePage from "./components/Client/Pages/EditProfilePage";
 import SavedJobsPage from "./components/Freelancer/Pages/SavedJobsPage";
 import BidDetails from "./components/Client/Pages/BidDetails";
 import ProfileErrorBoundary from './components/ErrorBoundary';
+import NotificationPage from "./components/Client/Pages/Notification";
+import NotificationSettings from "./components/Client/Pages/NotificationSettings";
+import AdminRoutes from './components/Admin/AdminRoutes';
 
 const queryClient = new QueryClient();
+
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const { currentUser } = useContext(AuthContext);
+  if (!currentUser) {
+    return <Navigate to="/signin" />;
+  }
+  return children;
+};
 
 const App = () => {
   const { currentUser, chatWithUser } = useContext(AuthContext);
@@ -52,73 +65,158 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Tooltip.Provider>
-        <AuthProvider>
+        <NotificationProvider>
           <Web3Provider>
-            {/* Notification systems */}
-            <HotToaster position="top-right" />
-            <SonnerToaster richColors closeButton position="bottom-right" />
+            <ContractProvider>
+              {/* Notification systems */}
+              <HotToaster position="top-right" />
+              <SonnerToaster richColors closeButton position="bottom-right" />
+              <Routes>
+                {/* All routes are wrapped in Layout to show Navbar */}
+                <Route element={<Layout />}>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Homepage />} />
+                  <Route path="/signin" element={<SignIn />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/role-selection" element={<RoleSelection />} />
+                  <Route path="/jobs" element={<JobListPage />} />
+                  <Route path="/browse-projects" element={<BrowseProjects />} />
+                  <Route path="/jobs/:id" element={<JobDetail />} />
+                  <Route path="/projects/:id" element={<ProjectDetails />} />
+                  <Route path="/profile/public/:userId" element={<PublicProfilePage />} />
 
-            <BrowserRouter>
-              <ContractProvider>
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route path="/" element={<Homepage />} />
-                    <Route path="/signin" element={<SignIn />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/role-selection" element={<RoleSelection />} />
-                    <Route path="/jobs" element={<JobListPage />} />
-                    <Route path="/createproject" element={<CreateProject />} />
-                    <Route path="/editproject/:id" element={<EditProject />} />
-                    <Route path="/projects/:id" element={<ProjectDetails />} />
-                    <Route path="/projectOverview" element={<ProjectOverview />} />
-                    <Route path="/projectDiscription" element={<ProjectDescription />} />
-                    <Route path="/projectGallery" element={<ProjectGallery />} />
-                    <Route path="/projectRequirement" element={<ProjectRequirements />} />
-                    <Route path="/projectPricing" element={<ProjectPricing />} />
-                    <Route path="/my-projects" element={<MyProjects />} />
-                    <Route path="/browse-projects" element={<BrowseProjects />} />
-                    <Route path="/job-list" element={<JobList />} />
-                    <Route path="/jobs/:id" element={<JobDetail />} />
-                    <Route path="/create-job" element={<CreateJob />} />
-                    <Route path="/my-jobs" element={<MyJobs />} />
-                    <Route path="/saved-jobs" element={<SavedJobsPage />} />
-                    <Route path="/bid-form" element={<BidForm />} />
-                    <Route path="/myproposals" element={<MyProposals/>} />
-                    <Route path="/contracts" element={<ContractsList />} />
-                    <Route path="/contracts/:contractId" element={<ContractView/>} />
-                    <Route path="/messages" element={<Index />} />
-                    <Route path="/messages/new" element={<Index />} />
-                    <Route
-                      path="/profile"
-                      element={
-                        <ProfileErrorBoundary>
-                          <Profile />
-                        </ProfileErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/profile/public/:userId"
-                      element={
-                        <ProfileErrorBoundary>
-                          <PublicProfilePage />
-                        </ProfileErrorBoundary>
-                      }
-                    />
-                    <Route
-                      path="/profile/edit"
-                      element={
-                        <ProfileErrorBoundary>
-                          <EditProfilePage />
-                        </ProfileErrorBoundary>
-                      }
-                    />
-                    <Route path="/bids/:bidId" element={<BidDetails />} />
-                  </Route>
-                </Routes>
-              </ContractProvider>
-            </BrowserRouter>
+                  {/* Protected Routes */}
+                  <Route path="/createproject" element={
+                    <ProtectedRoute>
+                      <CreateProject />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/editproject/:id" element={
+                    <ProtectedRoute>
+                      <EditProject />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/projectOverview" element={
+                    <ProtectedRoute>
+                      <ProjectOverview />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/projectDiscription" element={
+                    <ProtectedRoute>
+                      <ProjectDescription />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/projectGallery" element={
+                    <ProtectedRoute>
+                      <ProjectGallery />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/projectRequirement" element={
+                    <ProtectedRoute>
+                      <ProjectRequirements />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/projectPricing" element={
+                    <ProtectedRoute>
+                      <ProjectPricing />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/my-projects" element={
+                    <ProtectedRoute>
+                      <MyProjects />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/job-list" element={
+                    <ProtectedRoute>
+                      <JobList />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/create-job" element={
+                    <ProtectedRoute>
+                      <CreateJob />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/my-jobs" element={
+                    <ProtectedRoute>
+                      <MyJobs />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/saved-jobs" element={
+                    <ProtectedRoute>
+                      <SavedJobsPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/bid-form" element={
+                    <ProtectedRoute>
+                      <BidForm />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/myproposals" element={
+                    <ProtectedRoute>
+                      <MyProposals />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/contracts" element={
+                    <ProtectedRoute>
+                      <ContractsList />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/contracts/:contractId" element={
+                    <ProtectedRoute>
+                      <ContractView />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/messages" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/messages/new" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/bids/:bidId" element={
+                    <ProtectedRoute>
+                      <BidDetails />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <ProfileErrorBoundary>
+                        <Profile />
+                      </ProfileErrorBoundary>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile/edit" element={
+                    <ProtectedRoute>
+                      <ProfileErrorBoundary>
+                        <EditProfilePage />
+                      </ProfileErrorBoundary>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/notifications" element={
+                    <ProtectedRoute>
+                      <ProfileErrorBoundary>
+                        <NotificationPage />
+                      </ProfileErrorBoundary>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/settings/notifications" element={
+                    <ProtectedRoute>
+                      <ProfileErrorBoundary>
+                        <NotificationSettings />
+                      </ProfileErrorBoundary>
+                    </ProtectedRoute>
+                  } />
+                </Route>
+
+                {/* Admin Routes */}
+                <Route path="/admin/*" element={<AdminRoutes />} />
+              </Routes>
+            </ContractProvider>
           </Web3Provider>
-        </AuthProvider>
+        </NotificationProvider>
       </Tooltip.Provider>
     </QueryClientProvider>
   );

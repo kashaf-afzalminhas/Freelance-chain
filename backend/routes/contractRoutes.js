@@ -8,7 +8,8 @@ const {
     submitWork,
     approveWork,
     releasePayment,
-    deleteContract
+    deleteContract,
+    rejectWork
 } = require('../controllers/contractController');
 const auth = require('../middleware/auth');
 
@@ -37,6 +38,9 @@ router.post('/:id/submit-work', auth, submitWork);
 
 // Approve work for contract
 router.post('/:id/approve-work', auth, approveWork);
+
+// Reject work for contract
+router.post('/:id/reject-work', auth, rejectWork);
 
 // Release payment for contract
 router.post('/:id/release-payment', auth, releasePayment);

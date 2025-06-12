@@ -1,25 +1,47 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import JobCard from '../Cards/JobCard';
 import Filters from '../Cards/Filter';
+import { api } from '../../../services/api';
 
 function JobListPage() {
   const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/jobs');
+        setLoading(true);
+        const response = await api.get('/jobs');
         setJobs(response.data);
       } catch (error) {
         console.error('Error fetching jobs:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchJobs();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,14 +58,20 @@ function JobListPage() {
             </div>
 
             <div className="space-y-4">
-              {jobs.map((job, index) => (
-                <Link to={`/jobs/${job._id}`} key={index}>
-                  <JobCard
-                    {...job}
-                    createdAt={format(new Date(job.createdAt), 'EEEE, MMMM do, yyyy h:mm a')}
-                  />
-                </Link>
-              ))}
+              {jobs.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No jobs available at the moment.</p>
+                </div>
+              ) : (
+                jobs.map((job, index) => (
+                  <Link to={`/jobs/${job._id}`} key={index}>
+                    <JobCard
+                      {...job}
+                      createdAt={format(new Date(job.createdAt), 'EEEE, MMMM do, yyyy h:mm a')}
+                    />
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         </div>

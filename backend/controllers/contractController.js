@@ -1,6 +1,7 @@
 // backend/controllers/contractController.js
 const Contract = require('../models/Contract');
 const contractUtils = require('../utils/contractUtils');
+const notificationService = require('../services/notificationService');
 
 // Removed redundant initialization
 // initialize().catch(console.error);
@@ -529,6 +530,75 @@ exports.releasePayment = async (req, res) => {
         res.status(500).json({
             success: false,
             error: err.message
+        });
+    }
+};
+
+exports.rejectWork = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rejectionReason, transactionHash } = req.body;
+
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                error: 'Rejection reason is required'
+            });
+        }
+
+        // Find contract by contractId (number) instead of _id
+        const contract = await Contract.findOne({ contractId: parseInt(id) });
+        
+        if (!contract) {
+            return res.status(404).json({
+                success: false,
+                error: 'Contract not found'
+            });
+        }
+
+        // Update contract status and rejection details
+        const updatedContract = await Contract.findOneAndUpdate(
+            { contractId: parseInt(id) },
+            {
+                $set: {
+                    status: 'disputed',
+                    rejectionReason: rejectionReason,
+                    rejectionTransactionHash: transactionHash,
+                    updatedAt: new Date()
+                }
+            },
+            { new: true }
+        ).populate('client', 'name walletAddress')
+         .populate('freelancer', 'name walletAddress')
+         .populate('job', 'title description');
+
+        if (!updatedContract) {
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to update contract status'
+            });
+        }
+
+        // Create a notification for the admin
+        await notificationService.notify(
+            null, // No specific user ID for admin notifications
+            'dispute',
+            `Contract #${updatedContract.contractId} has been rejected by the client. Reason: ${rejectionReason}`,
+            `/admin/disputes/${updatedContract._id}`,
+            null, // No socket.io instance in this context
+            req.user._id, // Sender ID (the client who rejected)
+            true // This is an admin notification
+        );
+
+        res.json({
+            success: true,
+            data: updatedContract
+        });
+    } catch (err) {
+        console.error('Error in rejectWork:', err);
+        res.status(500).json({
+            success: false,
+            error: err.message || 'Failed to reject work'
         });
     }
 };

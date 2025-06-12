@@ -24,6 +24,7 @@
     "@web3-react/injected-connector": "^6.0.7",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
     "ethers": "^5.8.0",
     "formik": "^2.4.6",
     "lucide-react": "^0.471.1",

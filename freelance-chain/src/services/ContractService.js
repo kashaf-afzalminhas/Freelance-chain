@@ -123,8 +123,7 @@ export const contractService = {
     try {
       const response = await api.post(
         `/contracts/${contractId}/sign`,
-        { signerAddress },
-        getAuthConfig()
+        { signerAddress }
       );
       return response.data.data;
     } catch (error) {
@@ -204,6 +203,24 @@ export const contractService = {
       if (error.response) {
         console.error('Error response:', error.response.data);
         throw new Error(error.response.data.error || 'Failed to release payment');
+      }
+      throw error;
+    }
+  },
+
+  rejectWork: async (contractId, data) => {
+    try {
+      const response = await api.post(
+        `/contracts/${contractId}/reject-work`,
+        data,
+        getAuthConfig()
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('Reject work error:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        throw new Error(error.response.data.error || 'Failed to reject work');
       }
       throw error;
     }

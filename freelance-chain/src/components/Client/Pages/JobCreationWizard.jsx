@@ -55,7 +55,7 @@ const JobCreationWizard = () => {
 
       const response = await jobService.createJob(jobDataToSend);
       
-      if (response.success) {
+      if (response.job) {
         navigate("/my-jobs");
       } else {
         setError(response.message || "Failed to post job");
