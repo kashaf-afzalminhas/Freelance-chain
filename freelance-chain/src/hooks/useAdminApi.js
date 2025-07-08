@@ -15,15 +15,16 @@ export const useAdminApi = () => {
       throw new Error('No authentication token found');
     }
 
+    if (!account) {
+      throw new Error('No wallet address found');
+    }
+
     const config = {
       method,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'x-admin-wallet': account
-      },
-      params: {
-        walletAddress: account
+        'x-admin-wallet': account.toLowerCase()
       }
     };
 
@@ -98,6 +99,24 @@ export const useAdminApi = () => {
         return response.data.data;
       },
       enabled: !!account
+    });
+  };
+
+  const useUpdateJobStatus = () => {
+    return useMutation({
+      mutationFn: async ({ jobId, status }) => {
+        const response = await axios(
+          `http://localhost:5000/api/admin/jobs/${jobId}/status`,
+          getRequestConfig('patch', { status })
+        );
+        return response.data;
+      },
+      onSuccess: () => {
+        toast.success('Job status updated successfully');
+      },
+      onError: (error) => {
+        toast.error(error.response?.data?.message || 'Failed to update job status');
+      }
     });
   };
 
@@ -179,7 +198,11 @@ export const useAdminApi = () => {
       mutationFn: async ({ contractId, clientShare, freelancerShare, adminNote }) => {
         const response = await axios.post(
           `${API_BASE_URL}/admin/disputes/${contractId}/resolve`,
-          { clientShare, freelancerShare, adminNote },
+          { 
+            clientShare, // in basis points (0-10000)
+            freelancerShare, // in basis points (0-10000)
+            adminNote 
+          },
           getRequestConfig('post')
         );
         return response.data;
@@ -241,6 +264,7 @@ export const useAdminApi = () => {
     useUsers,
     useUpdateUserStatus,
     useJobs,
+    useUpdateJobStatus,
     useContracts,
     useDisputes,
     useDisputeDetails,

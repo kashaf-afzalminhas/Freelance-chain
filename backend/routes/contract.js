@@ -168,7 +168,10 @@ router.post('/:id/reject-work', async (req, res) => {
 
         contract.status = 'Disputed';
         contract.rejectionReason = reason;
+
+        console.log('Rejecting work: Saving contract with status:', contract.status);
         await contract.save();
+        console.log('Reject work: Contract saved. New status from object:', contract.status);
 
         res.json(contract);
     } catch (error) {

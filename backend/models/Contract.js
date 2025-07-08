@@ -91,6 +91,26 @@ const contractSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
+    },
+    disputeDetails: {
+        raisedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        reason: String,
+        raisedAt: Date,
+        transactionHash: String
+    },
+    disputeResolution: {
+        resolvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        resolvedAt: Date,
+        clientShare: Number,
+        freelancerShare: Number,
+        adminNote: String,
+        transactionHash: String
     }
 }, {
     timestamps: true

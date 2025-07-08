@@ -111,7 +111,7 @@ const JobDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold text-gray-700">Budget</h3>
-            <p className="text-lg">${job.budget}</p>
+            <p className="text-lg">{job.budget} VG</p>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-semibold text-gray-700">Duration</h3>

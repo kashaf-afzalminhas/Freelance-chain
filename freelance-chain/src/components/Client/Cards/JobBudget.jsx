@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
 
 const BudgetForm = ({ jobData, setJobData, onNext }) => {
-  const [minRate, setMinRate] = useState(0.1); // Minimum hourly rate in ETH
-  const [maxRate, setMaxRate] = useState(0.5); // Maximum hourly rate in ETH
+  const [minRate, setMinRate] = useState(0.1); // Minimum hourly rate in VG
+  const [maxRate, setMaxRate] = useState(0.5); // Maximum hourly rate in VG
   const [isFixedPrice, setIsFixedPrice] = useState(false);
   const [fixedBudget, setFixedBudget] = useState("");
 
-  // Validate ETH input (only numbers and decimals)
+  // Validate VG input (only numbers and decimals)
   const handleFixedBudgetChange = (e) => {
     const value = e.target.value;
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    if (value === "" || /^\\d*\\.?\\d*VG/.test(value)) {
       setFixedBudget(value);
     }
   };
@@ -19,7 +19,7 @@ const BudgetForm = ({ jobData, setJobData, onNext }) => {
     if (isFixedPrice) {
       setJobData({ ...jobData, budget: fixedBudget });
     } else {
-      setJobData({ ...jobData, budget: `${minRate} - ${maxRate} ETH/hour` });
+      setJobData({ ...jobData, budget: `${minRate} - ${maxRate} VG/hour` });
     }
   }, [minRate, maxRate, fixedBudget, isFixedPrice]);
 
@@ -41,7 +41,7 @@ const BudgetForm = ({ jobData, setJobData, onNext }) => {
 
         {/* Header */}
         <h2 className="text-xl md:text-2xl font-bold text-[#0C3B2E]">
-          Set your project budget in ETH
+          Set your project budget in VG
         </h2>
         <p className="text-gray-600 mt-2 text-sm md:text-base">
           This helps us match you with blockchain talent in your range.
@@ -70,9 +70,9 @@ const BudgetForm = ({ jobData, setJobData, onNext }) => {
         {/* Hourly Rate Range or Fixed Price Input */}
         {!isFixedPrice ? (
           <div className="mt-8">
-            <p className="text-gray-700 font-semibold">Hourly Rate Range (ETH)</p>
+            <p className="text-gray-700 font-semibold">Hourly Rate Range (VG)</p>
             <div className="mt-4">
-              <label className="block text-sm text-gray-600">Minimum Rate: Ξ{minRate.toFixed(2)}</label>
+              <label className="block text-sm text-gray-600">Minimum Rate: {minRate.toFixed(2)} VG</label>
               <input
                 type="range"
                 min="0.1"
@@ -84,7 +84,7 @@ const BudgetForm = ({ jobData, setJobData, onNext }) => {
               />
             </div>
             <div className="mt-6">
-              <label className="block text-sm text-gray-600">Maximum Rate: Ξ{maxRate.toFixed(2)}</label>
+              <label className="block text-sm text-gray-600">Maximum Rate: {maxRate.toFixed(2)} VG</label>
               <input
                 type="range"
                 min="0.1"
@@ -98,9 +98,9 @@ const BudgetForm = ({ jobData, setJobData, onNext }) => {
           </div>
         ) : (
           <div className="mt-8">
-            <p className="text-gray-700 font-semibold">Fixed Budget (ETH)</p>
+            <p className="text-gray-700 font-semibold">Fixed Budget (VG)</p>
             <div className="relative mt-2">
-              <span className="absolute left-3 top-3 text-gray-500">Ξ</span>
+              <span className="absolute left-3 top-3 text-gray-500">VG</span>
               <input
                 type="text"
                 value={fixedBudget}
@@ -117,8 +117,8 @@ const BudgetForm = ({ jobData, setJobData, onNext }) => {
           This is the average rate for similar projects. Professionals typically charge{" "}
           <strong className="text-[#0C3B2E]">
             {isFixedPrice
-              ? fixedBudget ? `Ξ${fixedBudget}` : 'Ξ0.10 - Ξ1.00'
-              : `Ξ${minRate.toFixed(2)} - Ξ${maxRate.toFixed(2)}/hour`}
+              ? fixedBudget ? `${fixedBudget} VG` : '0.10 - 1.00 VG'
+              : `${minRate.toFixed(2)} - ${maxRate.toFixed(2)} VG/hour`}
           </strong>{" "}
           for smart contract development and similar work. Rates may vary.
         </p>

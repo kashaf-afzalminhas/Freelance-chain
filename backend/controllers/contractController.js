@@ -593,6 +593,15 @@ exports.rejectWork = async (req, res) => {
             });
         }
 
+        // Get the numeric contract ID for blockchain operations
+        const numericContractId = parseInt(contract.contractId);
+        if (isNaN(numericContractId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid contract ID format'
+            });
+        }
+
         // Update contract status and rejection details
         contract.status = 'disputed';
         contract.rejectionReason = rejectionReason;

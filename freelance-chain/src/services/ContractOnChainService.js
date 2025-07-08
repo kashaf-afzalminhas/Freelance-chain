@@ -40,6 +40,34 @@ const VANGUARD_NETWORK = {
 // Removed debugTokenInfo function
 // async function debugTokenInfo(...) { ... }
 
+// Constants for retry logic
+const MAX_RETRIES = 5;
+const INITIAL_DELAY = 2000; // 2 seconds
+const MAX_DELAY = 30000; // 30 seconds
+
+// Helper function to calculate delay with jitter
+const calculateDelay = (attempt) => {
+  const delay = Math.min(INITIAL_DELAY * Math.pow(2, attempt), MAX_DELAY);
+  const jitter = Math.random() * 1000; // Add up to 1 second of random jitter
+  return delay + jitter;
+};
+
+// Helper function to check if error should trigger a retry
+const shouldRetry = (error) => {
+  return (
+    error.code === -32005 || // Rate limit error
+    error.message?.includes('rate limit') ||
+    error.message?.includes('too many requests') ||
+    error.message?.includes('timeout') ||
+    error.message?.includes('network error') ||
+    error.message?.includes('nonce too low') || // Common MetaMask error
+    error.message?.includes('already known') // Transaction already in pool
+  );
+};
+
+// Helper function to sleep
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function createContractOnChain({
   freelancerAddress,
   bidAmount,
@@ -49,240 +77,232 @@ export async function createContractOnChain({
   provider,
   signer
 }) {
-  try {
-    if (!window.ethereum) {
-      throw new Error('MetaMask not detected');
-    }
-
-    if (!provider || !signer) {
-      console.error('Provider or signer missing:', { provider, signer });
-      throw new Error('Wallet not connected');
-    }
-
-    // Enhanced parameter validation based on smart contract requirements
-    if (!freelancerAddress) {
-      throw new Error('Freelancer address is required');
-    }
-    const validatedFreelancerAddress = validateAddress(freelancerAddress);
-    if (!validatedFreelancerAddress || validatedFreelancerAddress === ethers.constants.AddressZero) {
-        throw new Error(`Invalid freelancer address provided: ${freelancerAddress}`);
-    }
-
-    if (!bidAmount || typeof bidAmount !== 'number' || bidAmount <= 0) {
-      throw new Error(`Bid amount must be a positive number: ${bidAmount}`);
-    }
-    
-    if (!deadline) {
-      throw new Error('Deadline is required');
-    }
-    
-    // Convert deadline to Unix timestamp (seconds) and validate
-    const deadlineDate = new Date(deadline);
-    const deadlineTimestamp = Math.floor(deadlineDate.getTime() / 1000);
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    
-    if (isNaN(deadlineDate.getTime())) {
-        throw new Error(`Invalid deadline date provided: ${deadline}`);
-    }
-    if (deadlineTimestamp <= currentTimestamp) {
-      throw new Error(`Deadline must be in the future. Provided: ${deadlineDate.toLocaleString()}`);
-    }
-
-    if (!jobTitle || jobTitle.trim() === '') {
-      throw new Error('Job title is required');
-    }
-    if (!jobDescription || jobDescription.trim() === '') {
-      throw new Error('Job description is required');
-    }
-
-    const signerAddress = await signer.getAddress();
-    console.log('Signer address:', signerAddress);
-
-    // Validate that freelancer is not the same as client (msg.sender)
-    if (validatedFreelancerAddress.toLowerCase() === signerAddress.toLowerCase()) {
-      throw new Error('Client cannot be the same as freelancer');
-    }
-
-    // Create a new provider with basic configuration
-    const customProvider = new ethers.providers.Web3Provider(window.ethereum);
-
-    // Convert bidAmount to wei (for native currency)
-    const bidAmountWei = ethers.utils.parseEther(bidAmount.toString());
-    console.log('Bid amount in wei:', bidAmountWei.toString());
-
-    // Add a small delay before checks
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Wait for 1.5 seconds
-
-    // Verify signer is on the correct network before checking balance
-    const network = await signer.getChainId();
-    console.log('Signer connected to chain ID:', network);
-    const expectedChainId = parseInt(VANGUARD_NETWORK.chainId, 16);
-    console.log('Expected Vanguard chain ID:', expectedChainId);
-
-    if (network !== expectedChainId) {
-      throw new Error(`Network mismatch: Signer is on chain ID ${network}, but expected ${expectedChainId} (${VANGUARD_NETWORK.chainName}). Please switch to the correct network in MetaMask.`);
-    }
-
-    // Check native coin balance
+  let lastError;
+  
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const balance = await signer.getBalance();
-      console.log('Raw native balance:', balance.toString());
-      console.log('Formatted native balance:', ethers.utils.formatEther(balance), 'VG');
-      console.log('Required amount:', ethers.utils.formatEther(bidAmountWei), 'VG');
-
-      // Check if balance is less than bid amount + a small buffer for gas
-      const gasBuffer = ethers.utils.parseEther('0.01'); // Add a small buffer for gas
-      const totalRequired = bidAmountWei.add(gasBuffer);
-
-      if (balance.lt(totalRequired)) {
-        throw new Error(`Insufficient native balance. Required: ${ethers.utils.formatEther(totalRequired)} VG (Bid + gas), Available: ${ethers.utils.formatEther(balance)} VG`);
+      if (!window.ethereum) {
+        throw new Error('MetaMask not detected');
       }
-    } catch (error) {
-      console.error('Error checking native balance:', error);
-      throw new Error(`Failed to verify native balance: ${error.message}`);
-    }
 
-    // Initialize contract with signer
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      if (!provider || !signer) {
+        console.error('Provider or signer missing:', { provider, signer });
+        throw new Error('Wallet not connected');
+      }
 
-    console.log('Creating contract with parameters:', {
-      freelancerAddress: validatedFreelancerAddress,
-      bidAmountWei: bidAmountWei.toString(),
-      deadlineTimestamp,
-      jobTitle,
-      jobDescription
-    });
+      // Enhanced parameter validation based on smart contract requirements
+      if (!freelancerAddress) {
+        throw new Error('Freelancer address is required');
+      }
+      const validatedFreelancerAddress = validateAddress(freelancerAddress);
+      if (!validatedFreelancerAddress || validatedFreelancerAddress === ethers.constants.AddressZero) {
+        throw new Error(`Invalid freelancer address provided: ${freelancerAddress}`);
+      }
 
-    // Estimate gas before sending transaction
-    try {
-      const gasEstimate = await contract.estimateGas.createContract(
+      if (!bidAmount || typeof bidAmount !== 'number' || bidAmount <= 0) {
+        throw new Error(`Bid amount must be a positive number: ${bidAmount}`);
+      }
+      
+      if (!deadline) {
+        throw new Error('Deadline is required');
+      }
+      
+      // Convert deadline to Unix timestamp (seconds) and validate
+      const deadlineDate = new Date(deadline);
+      const deadlineTimestamp = Math.floor(deadlineDate.getTime() / 1000);
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      
+      if (isNaN(deadlineDate.getTime())) {
+        throw new Error(`Invalid deadline date provided: ${deadline}`);
+      }
+      if (deadlineTimestamp <= currentTimestamp) {
+        throw new Error(`Deadline must be in the future. Provided: ${deadlineDate.toLocaleString()}`);
+      }
+
+      if (!jobTitle || jobTitle.trim() === '') {
+        throw new Error('Job title is required');
+      }
+      if (!jobDescription || jobDescription.trim() === '') {
+        throw new Error('Job description is required');
+      }
+
+      const signerAddress = await signer.getAddress();
+      console.log('Signer address:', signerAddress);
+
+      // Validate that freelancer is not the same as client (msg.sender)
+      if (validatedFreelancerAddress.toLowerCase() === signerAddress.toLowerCase()) {
+        throw new Error('Client cannot be the same as freelancer');
+      }
+
+      // Create a new provider with basic configuration
+      const customProvider = new ethers.providers.Web3Provider(window.ethereum);
+
+      // Convert bidAmount to wei (for native currency)
+      const bidAmountWei = ethers.utils.parseEther(bidAmount.toString());
+      console.log('Bid amount in wei:', bidAmountWei.toString());
+
+      // Add a small delay before checks
+      await sleep(1500); // Wait for 1.5 seconds
+
+      // Verify signer is on the correct network before checking balance
+      const network = await signer.getChainId();
+      console.log('Signer connected to chain ID:', network);
+      const expectedChainId = parseInt(VANGUARD_NETWORK.chainId, 16);
+      console.log('Expected Vanguard chain ID:', expectedChainId);
+
+      if (network !== expectedChainId) {
+        throw new Error(`Network mismatch: Signer is on chain ID ${network}, but expected ${expectedChainId} (${VANGUARD_NETWORK.chainName}). Please switch to the correct network in MetaMask.`);
+      }
+
+      // Check native coin balance
+      try {
+        const balance = await signer.getBalance();
+        console.log('Raw native balance:', balance.toString());
+        console.log('Formatted native balance:', ethers.utils.formatEther(balance), 'VG');
+        console.log('Required amount:', ethers.utils.formatEther(bidAmountWei), 'VG');
+
+        // Check if balance is less than bid amount + a small buffer for gas
+        const gasBuffer = ethers.utils.parseEther('0.01'); // Add a small buffer for gas
+        const totalRequired = bidAmountWei.add(gasBuffer);
+
+        if (balance.lt(totalRequired)) {
+          throw new Error(`Insufficient native balance. Required: ${ethers.utils.formatEther(totalRequired)} VG (Bid + gas), Available: ${ethers.utils.formatEther(balance)} VG`);
+        }
+      } catch (error) {
+        console.error('Error checking native balance:', error);
+        throw new Error(`Failed to verify native balance: ${error.message}`);
+      }
+
+      // Initialize contract with signer
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      console.log('Creating contract with parameters:', {
+        freelancerAddress: validatedFreelancerAddress,
+        bidAmountWei: bidAmountWei.toString(),
+        deadlineTimestamp,
+        jobTitle,
+        jobDescription
+      });
+
+      // Estimate gas before sending transaction
+      try {
+        const gasEstimate = await contract.estimateGas.createContract(
+          validatedFreelancerAddress,
+          bidAmountWei,
+          deadlineTimestamp,
+          jobTitle,
+          jobDescription
+        );
+        console.log('Estimated gas:', gasEstimate.toString());
+      } catch (error) {
+        console.error('Gas estimation failed:', error);
+        if (error.message && error.message.includes('execution reverted')) {
+          const revertReason = error.message.split('execution reverted:')[1];
+          throw new Error(revertReason ? `Gas estimation failed: Contract execution reverted - ${revertReason}` : 'Gas estimation failed: Contract execution reverted without a reason string. Check contract parameters.');
+        } else {
+          throw new Error(`Failed to estimate gas: ${error.message}`);
+        }
+      }
+
+      // Call the contract's createContract function with explicit gas limit
+      const tx = await contract.createContract(
         validatedFreelancerAddress,
         bidAmountWei,
         deadlineTimestamp,
         jobTitle,
-        jobDescription
+        jobDescription,
+        {
+          gasLimit: 800000 // Further increased gas limit as a troubleshooting step
+        }
       );
-      console.log('Estimated gas:', gasEstimate.toString());
-    } catch (error) {
-      console.error('Gas estimation failed:', error);
-      // This might still throw a CALL_EXCEPTION if a require fails during estimation
-       if (error.message && error.message.includes('execution reverted')) {
-         const revertReason = error.message.split('execution reverted:')[1];
-         throw new Error(revertReason ? `Gas estimation failed: Contract execution reverted - ${revertReason}` : 'Gas estimation failed: Contract execution reverted without a reason string. Check contract parameters.');
-       } else {
-         throw new Error(`Failed to estimate gas: ${error.message}`);
-       }
-    }
 
-    // Call the contract's createContract function with explicit gas limit
-    const tx = await contract.createContract(
-      validatedFreelancerAddress,
-      bidAmountWei,
-      deadlineTimestamp,
-      jobTitle,
-      jobDescription,
-      {
-        gasLimit: 800000 // Further increased gas limit as a troubleshooting step
-      }
-    );
+      console.log('Transaction sent:', tx.hash);
 
-    console.log('Transaction sent:', tx.hash);
+      // Wait for transaction confirmation with more detailed logging
+      console.log('Waiting for transaction confirmation...');
+      const receipt = await tx.wait();
+      console.log('Transaction receipt:', receipt);
 
-    // Wait for transaction confirmation with more detailed logging
-    console.log('Waiting for transaction confirmation...');
-    const receipt = await tx.wait();
-    console.log('Transaction receipt:', receipt);
+      // Log all events from the receipt
+      console.log('All events in receipt:', receipt.events);
 
-    // Log all events from the receipt
-    console.log('All events in receipt:', receipt.events);
-
-    // Look for the ContractCreated event with more detailed logging
-    const event = receipt.events?.find(e => {
-      console.log('Checking event:', {
-        eventName: e.event,
-        args: e.args
+      // Look for the ContractCreated event with more detailed logging
+      const event = receipt.events?.find(e => {
+        console.log('Checking event:', {
+          eventName: e.event,
+          args: e.args
+        });
+        return e.event === 'ContractCreated';
       });
-      return e.event === 'ContractCreated';
-    });
 
-    if (!event) {
-      console.error('ContractCreated event not found in receipt events:', receipt.events);
-      // Try to get the contract ID from the transaction logs
-      // This fallback might not be reliable if the transaction reverted.
-      // It's better to rely on the event.
-      const contractCount = await contract.getContractCount().then(count => count.toNumber());
-      // Assuming the new contract ID would be contractCount - 1 if the event was somehow missed but tx succeeded
-      const potentialContractId = contractCount > 0 ? contractCount - 1 : null;
-      console.log('Attempting fallback with contract count:', { contractCount, potentialContractId });
+      if (!event) {
+        console.error('ContractCreated event not found in receipt events:', receipt.events);
+        // Try to get the contract ID from the transaction logs
+        const contractCount = await contract.getContractCount().then(count => count.toNumber());
+        const potentialContractId = contractCount > 0 ? contractCount - 1 : null;
+        console.log('Attempting fallback with contract count:', { contractCount, potentialContractId });
 
-       if (potentialContractId !== null) {
-           // We can attempt to fetch the contract state with this ID to see if it exists
-           try {
-               const fetchedContractState = await contract.getContract(potentialContractId);
-               console.log('Fallback: Successfully fetched contract state with ID:', potentialContractId, fetchedContractState);
-                // If fetched successfully and client/freelancer match, assume this is the one
-               if (fetchedContractState.client.toLowerCase() === signerAddress.toLowerCase() &&
-                   fetchedContractState.freelancer.toLowerCase() === validatedFreelancerAddress.toLowerCase())
-               {
-                   console.log('Fallback: Client and freelancer match. Using fallback contract ID.');
-                   return {
-                       contractId: potentialContractId.toString(),
-                       txHash: tx.hash
-                   };
-    } else {
-                   console.log('Fallback: Client or freelancer mismatch. Fallback failed.');
-               }
-           } catch (fetchError) {
-                console.error('Fallback: Error fetching contract state with potential ID:', potentialContractId, fetchError);
-           }
-       }
+        if (potentialContractId !== null) {
+          try {
+            const fetchedContractState = await contract.getContract(potentialContractId);
+            console.log('Fallback: Successfully fetched contract state with ID:', potentialContractId, fetchedContractState);
+            if (fetchedContractState.client.toLowerCase() === signerAddress.toLowerCase() &&
+                fetchedContractState.freelancer.toLowerCase() === validatedFreelancerAddress.toLowerCase()) {
+              console.log('Fallback: Client and freelancer match. Using fallback contract ID.');
+              return {
+                contractId: potentialContractId.toString(),
+                txHash: tx.hash
+              };
+            } else {
+              console.log('Fallback: Client or freelancer mismatch. Fallback failed.');
+            }
+          } catch (fetchError) {
+            console.error('Fallback: Error fetching contract state with potential ID:', potentialContractId, fetchError);
+          }
+        }
 
-      throw new Error('Contract creation event not found in transaction receipt.');
-    }
+        throw new Error('Contract creation event not found in transaction receipt.');
+      }
 
-    console.log('ContractCreated event found:', event.args);
-    // The event args should contain the contractId. Let's confirm its structure.
-    // Based on JobContract.sol event definition: `event ContractCreated(uint256 contractId);`
-    if (event.args && event.args.contractId !== undefined) {
-    return {
-      contractId: event.args.contractId.toString(),
-      txHash: tx.hash
-    };
-    } else {
+      console.log('ContractCreated event found:', event.args);
+      if (event.args && event.args.contractId !== undefined) {
+        return {
+          contractId: event.args.contractId.toString(),
+          txHash: tx.hash
+        };
+      } else {
         console.error('ContractCreated event found, but contractId argument is missing or undefined:', event.args);
-        // As a final fallback, try fetching the contract count again if event args are bad
         const contractCount = await contract.getContractCount().then(count => count.toNumber());
         const finalFallbackContractId = contractCount > 0 ? contractCount - 1 : null;
-         if (finalFallbackContractId !== null) {
-             console.log('Final fallback: Using contract count - 1:', finalFallbackContractId);
-             return {
-                contractId: finalFallbackContractId.toString(),
-                txHash: tx.hash
-             };
-         } else {
-             throw new Error('ContractCreated event found but missing contractId, and fallback failed.');
-         }
-    }
+        if (finalFallbackContractId !== null) {
+          console.log('Final fallback: Using contract count - 1:', finalFallbackContractId);
+          return {
+            contractId: finalFallbackContractId.toString(),
+            txHash: tx.hash
+          };
+        } else {
+          throw new Error('ContractCreated event found but missing contractId, and fallback failed.');
+        }
+      }
 
-  } catch (error) {
-    console.error('Contract creation error:', error);
-    let errorMessage = 'Failed to create contract.';
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+      lastError = error;
 
-    if (error.code === 'INSUFFICIENT_FUNDS') {
-      errorMessage = 'Insufficient native coin balance for transaction gas or the bid amount.';
-    } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-      errorMessage = `Failed to estimate gas. Please check contract parameters and ensure you have sufficient native coin. Error: ${error.message}`; // Include original message
-    } else if (error.message && error.message.includes('execution reverted')) {
-      // Try to extract the revert reason if available
-      const revertReason = error.message.split('execution reverted:')[1];
-      errorMessage = revertReason ? `Contract execution failed: ${revertReason.trim()}` : 'Contract execution failed. A contract requirement was not met.'; // Improved generic message
-    } else if (error.reason) {
-         errorMessage = `Transaction failed: ${error.reason}`;
-    } else if (error.message) {
-         errorMessage = error.message;
+      if (!shouldRetry(error)) {
+        throw error; // Don't retry if it's not a retryable error
+      }
+
+      if (attempt < MAX_RETRIES - 1) {
+        const delay = calculateDelay(attempt);
+        console.log(`Retrying in ${delay}ms...`);
+        await sleep(delay);
+      }
     }
-    throw new Error(errorMessage);
   }
+
+  // If we've exhausted all retries, throw the last error
+  throw lastError;
 }
 
 // Update depositFundsOnChain to send native value
@@ -332,50 +352,80 @@ export const depositFundsOnChain = async (contractId, amount, signer) => {
     }
 };
 
-// signContractOnChain remains the same
 export const signContractOnChain = async (contractId, signerData) => {
+  let lastError;
+  
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-        const { isClient, isFreelancer, signer } = signerData;
+      if (!window.ethereum) {
+        throw new Error('MetaMask not detected');
+      }
 
-        console.log('Signing contract on chain:', { contractId, isClient, isFreelancer });
+      const { signer, provider } = signerData;
+      if (!signer || !provider) {
+        throw new Error('Signer or provider not provided');
+      }
 
-        if (!signer) { 
-            throw new Error('Signer is required to sign contract'); 
+      // Initialize contract with signer
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      // Add a small delay before signing
+      await sleep(1500);
+
+      // Estimate gas before sending transaction
+      try {
+        const gasEstimate = await contract.estimateGas.freelancerSign(contractId);
+        console.log('Estimated gas for signing:', gasEstimate.toString());
+      } catch (error) {
+        console.error('Gas estimation failed:', error);
+        if (error.message && error.message.includes('execution reverted')) {
+          const revertReason = error.message.split('execution reverted:')[1];
+          throw new Error(revertReason ? `Gas estimation failed: ${revertReason}` : 'Gas estimation failed: Contract execution reverted');
         }
+        throw error;
+      }
 
-        const customProvider = new ethers.providers.Web3Provider(window.ethereum);
-        const customSigner = customProvider.getSigner();
-        const contractWithSigner = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, customSigner);
+      // Send transaction with explicit gas limit
+      const tx = await contract.freelancerSign(contractId, {
+        gasLimit: 200000 // Increased gas limit
+      });
 
-        if (isClient) {
-            const tx = await contractWithSigner.clientSignContract(contractId);
-            await tx.wait();
-        } else if (isFreelancer) {
-            const tx = await contractWithSigner.freelancerSignContract(contractId);
-            await tx.wait();
-        } else { 
-            throw new Error('Invalid signer role'); 
-        }
+      console.log('Signing transaction sent:', tx.hash);
 
-        console.log('Signed successfully');
-        return { success: true, role: isClient ? 'client' : 'freelancer' };
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt);
+
+      // Verify the contract state after signing
+      const contractState = await contract.getContract(contractId);
+      if (!contractState.freelancerSigned) {
+        throw new Error('Contract signing verification failed');
+      }
+
+      return {
+        success: true,
+        transactionHash: tx.hash,
+        contractState
+      };
 
     } catch (error) {
-        console.error('Error signing contract:', error);
-        let errorMessage = 'Failed to sign contract';
-        
-        if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
-            errorMessage = 'Failed to estimate gas. Please try again or contact support.';
-        } else if (error.code === 'NONCE_EXPIRED') {
-            errorMessage = 'Transaction expired. Please try again.';
-        } else if (error.code === 'CALL_EXCEPTION') {
-            errorMessage = 'Transaction failed. Please check contract requirements.';
-        } else if (error.message && error.message.includes('execution reverted')) {
-            errorMessage = `Transaction failed: ${error.message.split('execution reverted:')[1] || error.message}`;
-        }
-        
-        throw new Error(errorMessage);
+      console.error(`Signing attempt ${attempt + 1} failed:`, error);
+      lastError = error;
+
+      if (!shouldRetry(error)) {
+        throw error; // Don't retry if it's not a retryable error
+      }
+
+      if (attempt < MAX_RETRIES - 1) {
+        const delay = calculateDelay(attempt);
+        console.log(`Retrying signing in ${delay}ms...`);
+        await sleep(delay);
+      }
     }
+  }
+
+  // If we've exhausted all retries, throw the last error
+  throw lastError;
 };
 
 // getContractStateOnChain remains similar, adjust bidAmount/fundsDeposited if needed

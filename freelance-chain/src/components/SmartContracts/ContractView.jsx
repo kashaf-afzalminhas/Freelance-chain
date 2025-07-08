@@ -7,7 +7,7 @@ import WorkSubmission from './WorkSubmission';
 import { toast } from 'sonner';
 import { ethers } from 'ethers';
 import { CONTRACT_ABI } from '../../../utils/contract'; // Adjust path if needed
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Star } from 'lucide-react';
 import { downloadFromIPFS, downloadWorkSubmission } from '../../services/ipfsService';
 import Modal from '../Modal'; // Updated import path
 import { useAuth } from '../../AuthContext';
@@ -28,6 +28,17 @@ const getBackendFileUrl = (hash) => {
   const API_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
   return `${API_URL}/api/ipfs/download/${encodeURIComponent(hash)}`;
 };
+
+const MAX_RETRIES = 5;
+const INITIAL_DELAY = 2000;
+const MAX_DELAY = 30000;
+
+const calculateDelay = (attempt) => {
+  const delay = Math.min(INITIAL_DELAY * Math.pow(2, attempt), MAX_DELAY);
+  return delay + Math.random() * 1000; // Add jitter
+};
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const ContractView = () => {
   const { contractId } = useParams();
@@ -50,6 +61,12 @@ const ContractView = () => {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [clientShare, setClientShare] = useState('');
   const [freelancerShare, setFreelancerShare] = useState('');
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
 
   // Find the specific contract being viewed from the context
   const contract = useMemo(() => {
@@ -265,131 +282,158 @@ const ContractView = () => {
   };
 
   const handleFreelancerSign = async () => {
-    try {
-      if (!contract) return;
-      if (!contract.contractAddress || contract.contractId === undefined) {
-        toast.error('Contract address or ID missing');
-        return;
-      }
-      if (!window.ethereum) {
-        toast.error('MetaMask not detected');
-        return;
-      }
-
-      // Connect to MetaMask
-      const provider = new ethers.providers.Web3Provider(window.ethereum, {
-        name: 'Vanguard',
-        chainId: 78600,
-        ensAddress: null
-      });
-      const signer = provider.getSigner();
-      const contractInstance = new ethers.Contract(
-        contract.contractAddress,
-        CONTRACT_ABI,
-        signer
-      );
-
-      // First check contract state
-      const contractData = await contractInstance.getContract(contract.contractId);
-      console.log('Current contract state before signing:', {
-        status: contractData.status,
-        clientSigned: contractData.clientSigned,
-        freelancerSigned: contractData.freelancerSigned,
-        fundsDeposited: contractData.fundsDeposited,
-        client: contractData.client,
-        freelancer: contractData.freelancer
-      });
-
-      // Verify freelancer is the correct signer
-      const freelancerAddress = await signer.getAddress();
-      console.log('Freelancer address check:', {
-        signerAddress: freelancerAddress,
-        contractFreelancer: contractData.freelancer,
-        isMatch: freelancerAddress.toLowerCase() === contractData.freelancer.toLowerCase()
-      });
-
-      if (freelancerAddress.toLowerCase() !== contractData.freelancer.toLowerCase()) {
-        toast.error('Only the contract freelancer can sign');
-        return;
-      }
-
-      // Check if client has already signed and deposited funds
-      if (contractData.status !== 1) {
-        console.error('Contract status check failed:', {
-          currentStatus: contractData.status,
-          expectedStatus: 1,
-          clientSigned: contractData.clientSigned,
-          fundsDeposited: contractData.fundsDeposited
-        });
-        toast.error('Client must sign and deposit funds first');
-        return;
-      }
-
-      // Get current gas price and add 20% buffer
-      const gasPrice = await provider.getGasPrice();
-      const bufferedGasPrice = gasPrice.mul(120).div(100);
-      console.log('Gas price with buffer:', ethers.utils.formatUnits(bufferedGasPrice, 'gwei'), 'gwei');
-
-      // Use a fixed gas limit for signing
-      const signGasLimit = 200000;
-
-      console.log('Attempting to sign contract with parameters:', {
-        contractId: contract.contractId,
-        gasPrice: ethers.utils.formatUnits(bufferedGasPrice, 'gwei'),
-        gasLimit: signGasLimit
-      });
-
-      // Sign contract using freelancerSign function
-      const tx = await contractInstance.freelancerSign(
-        contract.contractId,
-        { 
-          gasPrice: bufferedGasPrice,
-          gasLimit: signGasLimit
+    let lastError;
+    
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        if (!contract) return;
+        if (!contract.contractAddress || contract.contractId === undefined) {
+          toast.error('Contract address or ID missing');
+          return;
         }
-      );
-      console.log('Transaction sent:', tx.hash);
-      
-      // Wait for transaction confirmation
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt);
+        if (!window.ethereum) {
+          toast.error('MetaMask not detected');
+          return;
+        }
 
-      if (receipt.status === 0) {
-        throw new Error('Transaction failed - contract requirements not met');
+        // Add a small delay before each attempt
+        if (attempt > 0) {
+          const delay = calculateDelay(attempt);
+          console.log(`Retry attempt ${attempt + 1}, waiting ${delay}ms...`);
+          await sleep(delay);
+        }
+
+        // Connect to MetaMask
+        const provider = new ethers.providers.Web3Provider(window.ethereum, {
+          name: 'Vanguard',
+          chainId: 78600,
+          ensAddress: null
+        });
+        const signer = provider.getSigner();
+        const contractInstance = new ethers.Contract(
+          contract.contractAddress,
+          CONTRACT_ABI,
+          signer
+        );
+
+        // First check contract state
+        const contractData = await contractInstance.getContract(contract.contractId);
+        console.log('Current contract state before signing:', {
+          status: contractData.status,
+          clientSigned: contractData.clientSigned,
+          freelancerSigned: contractData.freelancerSigned,
+          fundsDeposited: contractData.fundsDeposited,
+          client: contractData.client,
+          freelancer: contractData.freelancer
+        });
+
+        // Verify freelancer is the correct signer
+        const freelancerAddress = await signer.getAddress();
+        console.log('Freelancer address check:', {
+          signerAddress: freelancerAddress,
+          contractFreelancer: contractData.freelancer,
+          isMatch: freelancerAddress.toLowerCase() === contractData.freelancer.toLowerCase()
+        });
+
+        if (freelancerAddress.toLowerCase() !== contractData.freelancer.toLowerCase()) {
+          toast.error('Only the contract freelancer can sign');
+          return;
+        }
+
+        // Check if client has already signed and deposited funds
+        if (contractData.status !== 1) {
+          console.error('Contract status check failed:', {
+            currentStatus: contractData.status,
+            expectedStatus: 1,
+            clientSigned: contractData.clientSigned,
+            fundsDeposited: contractData.fundsDeposited
+          });
+          toast.error('Client must sign and deposit funds first');
+          return;
+        }
+
+        // Get current gas price and add 20% buffer
+        const gasPrice = await provider.getGasPrice();
+        const bufferedGasPrice = gasPrice.mul(120).div(100);
+        console.log('Gas price with buffer:', ethers.utils.formatUnits(bufferedGasPrice, 'gwei'), 'gwei');
+
+        // Use a fixed gas limit for signing
+        const signGasLimit = 200000;
+
+        console.log('Attempting to sign contract with parameters:', {
+          contractId: contract.contractId,
+          gasPrice: ethers.utils.formatUnits(bufferedGasPrice, 'gwei'),
+          gasLimit: signGasLimit
+        });
+
+        // Sign contract using freelancerSign function
+        const tx = await contractInstance.freelancerSign(
+          contract.contractId,
+          { 
+            gasPrice: bufferedGasPrice,
+            gasLimit: signGasLimit
+          }
+        );
+        console.log('Transaction sent:', tx.hash);
+        
+        // Wait for transaction confirmation
+        const receipt = await tx.wait();
+        console.log('Transaction confirmed:', receipt);
+
+        if (receipt.status === 0) {
+          throw new Error('Transaction failed - contract requirements not met');
+        }
+
+        // Verify signing was successful
+        const updatedContractData = await contractInstance.getContract(contract.contractId);
+        console.log('Contract state after signing:', {
+          status: updatedContractData.status,
+          clientSigned: updatedContractData.clientSigned,
+          freelancerSigned: updatedContractData.freelancerSigned,
+          fundsDeposited: updatedContractData.fundsDeposited
+        });
+
+        if (!updatedContractData.freelancerSigned) {
+          throw new Error('Signing verification failed');
+        }
+
+        toast.success('Contract signed successfully!');
+        
+        // Refetch all contracts to ensure UI is updated with the latest state
+        await fetchContracts(false); // Fetch silently without toast
+        return; // Success - exit the retry loop
+
+      } catch (err) {
+        console.error(`Signing attempt ${attempt + 1} failed:`, err);
+        lastError = err;
+
+        // Check if we should retry
+        const shouldRetry = 
+          err.code === -32603 || // Rate limit error
+          err.code === -32005 || // Another rate limit error code
+          err.message?.includes('rate limit') ||
+          err.message?.includes('timeout') ||
+          err.message?.includes('nonce too low') ||
+          err.message?.includes('already known');
+
+        if (!shouldRetry || attempt === MAX_RETRIES - 1) {
+          // Don't retry if it's not a retryable error or we've exhausted retries
+          let errorMessage = 'Failed to sign contract';
+          
+          if (err.code === 'UNPREDICTABLE_GAS_LIMIT') {
+            errorMessage = 'Failed to estimate gas. Please try again or contact support.';
+          } else if (err.code === 'NONCE_EXPIRED') {
+            errorMessage = 'Transaction expired. Please try again.';
+          } else if (err.code === 'CALL_EXCEPTION') {
+            errorMessage = 'Transaction failed. Please check contract requirements.';
+          } else if (err.message && err.message.includes('execution reverted')) {
+            errorMessage = `Transaction failed: ${err.message.split('execution reverted:')[1] || err.message}`;
+          }
+          
+          toast.error(errorMessage);
+          return;
+        }
       }
-
-      // Verify signing was successful
-      const updatedContractData = await contractInstance.getContract(contract.contractId);
-      console.log('Contract state after signing:', {
-        status: updatedContractData.status,
-        clientSigned: updatedContractData.clientSigned,
-        freelancerSigned: updatedContractData.freelancerSigned,
-        fundsDeposited: updatedContractData.fundsDeposited
-      });
-
-      if (!updatedContractData.freelancerSigned) {
-        throw new Error('Signing verification failed');
-      }
-
-      toast.success('Contract signed successfully!');
-      
-      // Refetch all contracts to ensure UI is updated with the latest state
-      await fetchContracts(false); // Fetch silently without toast
-    } catch (err) {
-      console.error('Signing failed:', err);
-      let errorMessage = 'Failed to sign contract';
-      
-      // Handle specific error cases
-      if (err.code === 'UNPREDICTABLE_GAS_LIMIT') {
-        errorMessage = 'Failed to estimate gas. Please try again or contact support.';
-      } else if (err.code === 'NONCE_EXPIRED') {
-        errorMessage = 'Transaction expired. Please try again.';
-      } else if (err.code === 'CALL_EXCEPTION') {
-        errorMessage = 'Transaction failed. Please check contract requirements.';
-      } else if (err.message && err.message.includes('execution reverted')) {
-        errorMessage = `Transaction failed: ${err.message.split('execution reverted:')[1] || err.message}`;
-      }
-      
-      toast.error(errorMessage);
     }
   };
 
@@ -506,8 +550,8 @@ const ContractView = () => {
 
       if (receipt.status === 1) {
         toast.success('Work approved successfully!');
-        // Refetch contract to update UI
-        fetchContracts(false); // Fetch silently
+        setShowRatingModal(true);
+        fetchContracts(false);
       } else {
         throw new Error('Approve work transaction failed on chain.');
       }
@@ -564,27 +608,17 @@ const ContractView = () => {
         return;
       }
 
-      // First call rejectWork to log the reason
+      // Call rejectWork to log the reason and change status
       const rejectTx = await contractInstance.rejectWork(contract.contractId, rejectReason);
       await rejectTx.wait();
 
-      // Get dispute fee from contract
-      const disputeFee = await contractInstance.disputeFee();
-
-      // Then call raiseDispute to change status to disputed
-      const disputeTx = await contractInstance.raiseDispute(contract.contractId, {
-        value: disputeFee
-      });
-      await disputeTx.wait();
-
-      // Update the backend about the rejection and dispute
-      await contractService.rejectWork(contract._id, { // Changed from contract.contractId to contract._id
+      // Update the backend about the rejection using the MongoDB _id
+      await contractService.rejectWork(contract._id, {
         rejectionReason: rejectReason,
-        transactionHash: rejectTx.hash,
-        disputeTransactionHash: disputeTx.hash
+        transactionHash: rejectTx.hash
       });
 
-      toast.success('Work rejected and dispute raised successfully');
+      toast.success('Work rejected successfully');
       setShowRejectModal(false);
       setRejectReason('');
       // Refetch contract data
@@ -709,6 +743,26 @@ const ContractView = () => {
       toast.error('Failed to resolve dispute: ' + (err.response?.data?.message || err.message || 'Unknown error'));
     } finally {
       setResolveLoading(false);
+    }
+  };
+
+  // Modify the handleSubmitRating function to work without backend
+  const handleSubmitRating = () => {
+    if (rating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+
+    setRatingLoading(true);
+    try {
+      // Just update the local state
+      setHasRated(true);
+      toast.success('Rating submitted successfully');
+      setShowRatingModal(false);
+    } catch (err) {
+      toast.error('Failed to submit rating');
+    } finally {
+      setRatingLoading(false);
     }
   };
 
@@ -1098,6 +1152,97 @@ const ContractView = () => {
                 disabled={resolveLoading}
               >
                 {resolveLoading ? 'Resolving...' : 'Resolve Dispute'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Add Rating Display after rating is submitted */}
+      {hasRated && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Your Rating</h3>
+          <div className="flex items-center space-x-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                className={`w-5 h-5 ${
+                  star <= rating
+                    ? 'text-yellow-400 fill-current'
+                    : 'text-gray-300'
+                }`}
+              />
+            ))}
+            <span className="text-sm text-gray-600 ml-2">
+              ({rating} star{rating === 1 ? '' : 's'})
+            </span>
+          </div>
+          {ratingComment && (
+            <p className="mt-2 text-sm text-gray-600">
+              "{ratingComment}"
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <Modal 
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          title="Rate Freelancer"
+        >
+          <div className="space-y-4">
+            <div className="flex justify-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  className="focus:outline-none"
+                >
+                  <Star
+                    className={`w-8 h-8 ${
+                      star <= (hoverRating || rating)
+                        ? 'text-yellow-400 fill-current'
+                        : 'text-gray-300'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <div className="text-center text-sm text-gray-500">
+              {rating === 0
+                ? 'Select a rating'
+                : `${rating} star${rating === 1 ? '' : 's'}`}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Comments (optional)
+              </label>
+              <textarea
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary"
+                rows={3}
+                placeholder="Share your experience working with this freelancer..."
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowRatingModal(false)}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleSubmitRating}
+                disabled={ratingLoading}
+                className="px-4 py-2 bg-primary text-white rounded hover:bg-opacity-90 disabled:opacity-70"
+              >
+                {ratingLoading ? 'Submitting...' : 'Submit Rating'}
               </button>
             </div>
           </div>

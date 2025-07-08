@@ -46,7 +46,7 @@ const JobDescription = ({ jobData, setJobData, onNext }) => {
             maxLength={30000}
             value={jobData.description}
             onChange={handleChange}
-            placeholder="Already have a description? Paste it here!"
+            placeholder="Already have a description? Paste it here!\n\nExample:\nBudget: 500-800 VG\nTimeline: 1-2 weeks\nRequired Skills: React, Node.js, Blockchain Development"
             className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-md text-sm sm:text-base placeholder-[#BB8A52] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#6D9773] font-minion transition-colors"
           ></textarea>
           <p className="text-xs sm:text-sm text-gray-500 mt-1 font-minion">

@@ -85,6 +85,7 @@ export const AuthProvider = ({ children }) => {
       const response = await api.get('/api/admin/verify', {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
           'x-admin-wallet': user.walletAddress.toLowerCase()
         },
         params: {

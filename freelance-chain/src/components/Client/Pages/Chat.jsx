@@ -272,7 +272,7 @@ const ChatPage = () => {
           >
             Recent Chats
           </button>
-          <button
+          {/* <button
             className={`flex-1 py-4 text-center font-heading text-lg md:text-base ${
               activeTab === 'users' 
                 ? 'border-b-2 border-accent text-accent font-bold' 
@@ -281,7 +281,7 @@ const ChatPage = () => {
             onClick={() => setActiveTab('users')}
           >
             All Users
-          </button>
+          </button> */}
         </div>
 
         {/* Tab content */}

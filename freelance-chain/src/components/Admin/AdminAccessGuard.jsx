@@ -123,8 +123,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWeb3 } from '../../context/Web3Context';
-import { api } from '../../services/api';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
+import { ethers } from 'ethers';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../../utils/contract';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const AdminAccessGuard = ({ children }) => {
   const navigate = useNavigate();
@@ -138,14 +142,34 @@ const AdminAccessGuard = ({ children }) => {
 
   const checkExistingVerification = () => {
     const verifiedAdmin = localStorage.getItem('verifiedAdmin');
-    const verifiedWallet = localStorage.getItem('verifiedWallet');
+    const adminWalletAddress = localStorage.getItem('adminWalletAddress');
     const authToken = localStorage.getItem('authToken');
-   
-    if (verifiedAdmin && verifiedWallet === account && authToken) {
+    
+    console.log('Checking existing verification:', {
+      hasAccount: !!account,
+      verifiedAdmin,
+      adminWalletAddress,
+      hasAuthToken: !!authToken
+    });
+
+    if (!account || !verifiedAdmin || !adminWalletAddress || !authToken) {
+      console.log('Missing verification data');
+      return false;
+    }
+
+    const normalizedStoredWallet = adminWalletAddress.toLowerCase();
+    const normalizedCurrentWallet = account.toLowerCase();
+
+    if (verifiedAdmin === 'true' && normalizedStoredWallet === normalizedCurrentWallet) {
+      console.log('Using existing admin verification');
       setIsAdmin(true);
       setIsVerifying(false);
       return true;
     }
+
+    console.log('Clearing invalid verification data');
+    localStorage.removeItem('verifiedAdmin');
+    localStorage.removeItem('adminWalletAddress');
     return false;
   };
 
@@ -161,14 +185,19 @@ const AdminAccessGuard = ({ children }) => {
 
   const verifyAdminStatus = async (walletAddress) => {
     try {
+      const normalizedWalletAddress = walletAddress.toLowerCase();
       const token = localStorage.getItem('authToken');
+
       if (!token) {
-        throw new Error('No authentication token found');
+        console.error('No auth token found');
+        toast.error('Please log in first');
+        navigate('/login');
+        return false;
       }
 
       const response = await api.get('/api/admin/verify', {
         params: {
-          walletAddress
+          walletAddress: normalizedWalletAddress
         }
       });
 
@@ -178,14 +207,35 @@ const AdminAccessGuard = ({ children }) => {
         setIsAdmin(true);
         return true;
       }
-      return false;
+
+      // Then verify against smart contract
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(
+        CONTRACT_ADDRESS, 
+        CONTRACT_ABI, 
+        provider
+      );
+      
+      const contractAdmin = await contract.admin();
+      console.log('Contract admin check:', {
+        contractAdmin: contractAdmin.toLowerCase(),
+        walletAddress: normalizedWalletAddress
+      });
+
+      if (contractAdmin.toLowerCase() !== normalizedWalletAddress) {
+        console.error('Wallet is not contract admin');
+        toast.error('Wallet is not a contract admin');
+        return false;
+      }
+
+      console.log('Admin verification successful');
+      // Store verification data
+      localStorage.setItem('verifiedAdmin', 'true');
+      localStorage.setItem('adminWalletAddress', normalizedWalletAddress);
+      return true;
     } catch (error) {
       console.error('Admin verification error:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('verifiedAdmin');
-        localStorage.removeItem('verifiedWallet');
-      }
+      toast.error('Admin verification failed');
       return false;
     }
   };
@@ -203,6 +253,7 @@ const AdminAccessGuard = ({ children }) => {
       return;
     }
 
+    // Verify admin status
     const isVerified = await verifyAdminStatus(account);
    
     if (!isVerified) {
@@ -211,6 +262,7 @@ const AdminAccessGuard = ({ children }) => {
       return;
     }
 
+    setIsAdmin(true);
     setIsVerifying(false);
   };
 
