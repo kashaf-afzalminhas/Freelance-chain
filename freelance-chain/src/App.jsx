@@ -47,7 +47,7 @@ import ProfileErrorBoundary from './components/ErrorBoundary';
 import NotificationPage from "./components/Client/Pages/Notification";
 import NotificationSettings from "./components/Client/Pages/NotificationSettings";
 import AdminRoutes from './components/Admin/AdminRoutes';
-
+// import TermsAndConditions from "./components/terms";
 const queryClient = new QueryClient();
 
 // Protected Route component
@@ -92,6 +92,8 @@ const App = () => {
                   <Route path="/jobs/:id" element={<JobDetail />} />
                   <Route path="/projects/:id" element={<ProjectDetails />} />
                   <Route path="/profile/public/:userId" element={<PublicProfilePage />} />
+
+                  {/* <Route path='/terms' element={<TermsAndConditions/>}/> */}
 
                   {/* Protected Routes */}
                   <Route path="/createproject" element={

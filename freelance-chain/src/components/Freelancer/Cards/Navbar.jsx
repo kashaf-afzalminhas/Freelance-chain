@@ -467,6 +467,13 @@ const Navbar = () => {
             >
               Notification Settings
             </Link>
+            
+            <Link
+              to="/terms"
+              className="text-gray-500 hover:bg-[#f0f7f1] hover:text-[#0C3B2E] block px-4 py-2 text-base font-medium"
+            >
+              Terms and Conditions
+            </Link>
 
             {/* Mobile Auth Section */}
             {user ? (
