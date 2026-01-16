@@ -1,0 +1,193 @@
+[
+  {
+    "_id": "685000000000000000000001",
+    "title": "Responsive E-Commerce Website with Admin Panel",
+    "category": "web",
+    "description": "A complete mobile-responsive e-commerce web application built with React, Node.js, and MongoDB. Features include product listings, user authentication, order management, and a fully functional admin dashboard.",
+    "price": 100,
+    "media": [
+      {
+        "url": "/uploads/projects/ecommerce.png",
+        "type": "image",
+        "name": "ecommerce_project.png",
+        "size": 945263,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000002",
+    "title": "Custom Portfolio Website for Developers",
+    "category": "web",
+    "description": "Modern and animated portfolio template using React, Tailwind CSS, and Framer Motion. Fully customizable with sections for projects, skills, resume, and contact form.",
+    "price": 50,
+    "media": [
+      {
+        "url": "/uploads/projects/portfolio.png",
+        "type": "image",
+        "name": "portfolio_template.png",
+        "size": 876234,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000003",
+    "title": "AI-Powered Blog Writing Assistant",
+    "category": "AI",
+    "description": "This project provides an AI assistant that helps write SEO-optimized blog content using OpenAI API. Built with Next.js and integrates with Google Docs.",
+    "price": 150,
+    "media": [
+      {
+        "url": "/uploads/projects/ai-blog-writer.png",
+        "type": "image",
+        "name": "ai_blog_writer.png",
+        "size": 902123,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000004",
+    "title": "Decentralized Freelance Platform (with Escrow)",
+    "category": "blockchain",
+    "description": "A smart contract-based freelance marketplace on VanarChain with MetaMask login, job contracts, and escrow payment release. Includes dispute resolution and fee handling.",
+    "price": 300,
+    "media": [
+      {
+        "url": "/uploads/projects/freelance-dapp.png",
+        "type": "image",
+        "name": "freelance_dapp.png",
+        "size": 1043920,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000005",
+    "title": "Real-Time Chat App with Socket.IO",
+    "category": "web",
+    "description": "Real-time messaging platform with typing indicators, online presence, and chat history. Built using React, Node.js, MongoDB, and Socket.IO.",
+    "price": 80,
+    "media": [
+      {
+        "url": "/uploads/projects/chat-app.png",
+        "type": "image",
+        "name": "realtime_chat.png",
+        "size": 814533,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000006",
+    "title": "Admin Dashboard Template with Charts & Analytics",
+    "category": "dashboard",
+    "description": "Fully functional admin dashboard with authentication, analytics, and dark mode. Includes charts with Recharts and role-based access using MERN stack.",
+    "price": 70,
+    "media": [
+      {
+        "url": "/uploads/projects/admin-dashboard.png",
+        "type": "image",
+        "name": "admin_dashboard.png",
+        "size": 930000,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000007",
+    "title": "Online Learning Platform (LMS)",
+    "category": "web",
+    "description": "A full Learning Management System with course uploads, quizzes, assignments, and payment integration using Stripe. Built with React, Node, and MongoDB.",
+    "price": 200,
+    "media": [
+      {
+        "url": "/uploads/projects/lms.png",
+        "type": "image",
+        "name": "lms_platform.png",
+        "size": 1049483,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000008",
+    "title": "Mobile App: Pet Adoption Platform",
+    "category": "mobile",
+    "description": "React Native mobile app for adopting pets, featuring NGO profiles, animal health records, and secure messaging. Backend powered by Express.js and MongoDB.",
+    "price": 180,
+    "media": [
+      {
+        "url": "/uploads/projects/pet-adoption.png",
+        "type": "image",
+        "name": "pet_adoption_app.png",
+        "size": 895821,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  },
+  {
+    "_id": "685000000000000000000009",
+    "title": "Crypto Portfolio Tracker App",
+    "category": "blockchain",
+    "description": "A dashboard app that tracks prices of crypto assets, wallet balances, and transaction history. Includes price alerts and historical graph visualization.",
+    "price": 90,
+    "media": [
+      {
+        "url": "/uploads/projects/crypto-tracker.png",
+        "type": "image",
+        "name": "crypto_tracker.png",
+        "size": 778132,
+        "uploadedAt": "2025-06-15T19:20:00.000Z"
+      }
+    ],
+    "status": "active",
+    "freelancer": "68329bb2fd543255293acf3f",
+    "freelancerName": "Kashaf Afzal",
+    "createdAt": "2025-06-15T19:20:00.000Z",
+    "updatedAt": "2025-06-15T19:20:00.000Z"
+  }
+
+
+]

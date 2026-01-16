@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "bn.js": "^5.2.2",
+    "buffer": "^6.0.3",
+    "swiper": "^11.2.7"
+  }
+}

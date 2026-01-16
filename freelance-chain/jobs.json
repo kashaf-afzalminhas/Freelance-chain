@@ -1,0 +1,152 @@
+[
+  {
+    "title": "Build a Portfolio Website with Next.js",
+    "description": "Create a modern, responsive personal portfolio using Next.js. It should include a blog, contact form, and animations.",
+    "budget": 1.5,
+    "duration": "1 to 3 months",
+    "skills": ["Next.js", "React", "Tailwind CSS"],
+    "levels": "Intermediate",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Develop a REST API for E-commerce App",
+    "description": "Looking for a backend developer to build a secure RESTful API for an e-commerce application using Node.js and MongoDB.",
+    "budget": 2.0,
+    "duration": "Less than 1 month",
+    "skills": ["Node.js", "Express", "MongoDB", "JWT"],
+    "levels": "Experienced",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "React Native App for Pet Adoption",
+    "description": "Build a mobile app in React Native for pet adoption with features like search, filters, and chat support.",
+    "budget": 2.5,
+    "duration": "1 to 3 months",
+    "skills": ["React Native", "Firebase", "Mobile UX"],
+    "levels": "Intermediate",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Design Logo and Branding Kit",
+    "description": "Create a logo, color scheme, and typography guide for a tech startup focused on cybersecurity.",
+    "budget": 0.5,
+    "duration": "Less than 1 month",
+    "skills": ["Graphic Design", "Adobe Illustrator", "Branding"],
+    "levels": "Entry Level",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Deploy Smart Contract on VanarChain",
+    "description": "Need help deploying a Solidity-based smart contract on VanarChain testnet and verifying it on their block explorer.",
+    "budget": 1.0,
+    "duration": "Less than 1 month",
+    "skills": ["Solidity", "Hardhat", "VanarChain"],
+    "levels": "Experienced",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Build Admin Dashboard in React",
+    "description": "Create a fully functional admin dashboard in React with charts, user management, and notifications.",
+    "budget": 1.8,
+    "duration": "3 to 6 months",
+    "skills": ["React", "Redux", "Chart.js", "Firebase"],
+    "levels": "Experienced",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Create an AI Resume Generator Tool",
+    "description": "Build a web app using Node.js and OpenAI API to generate resumes based on user input.",
+    "budget": 3.0,
+    "duration": "1 to 3 months",
+    "skills": ["Node.js", "OpenAI API", "MongoDB"],
+    "levels": "Expert",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Basic Website for NGO (HTML/CSS/JS)",
+    "description": "Build a simple 5-page informational website for an NGO using only HTML, CSS, and vanilla JS.",
+    "budget": 0.3,
+    "duration": "Less than 1 month",
+    "skills": ["HTML", "CSS", "JavaScript"],
+    "levels": "Entry Level",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Optimize Existing MERN Stack Code",
+    "description": "Need a dev to review and optimize an existing MERN app, improve performance and fix bugs.",
+    "budget": 1.2,
+    "duration": "1 to 3 months",
+    "skills": ["MongoDB", "Express", "React", "Node.js"],
+    "levels": "Intermediate",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Landing Page for Crypto Startup",
+    "description": "Design and build a stunning landing page for a blockchain-based startup using Web3 tech.",
+    "budget": 0.8,
+    "duration": "Less than 1 month",
+    "skills": ["Web3", "HTML", "Figma", "React"],
+    "levels": "Intermediate",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Create Interactive Data Dashboard",
+    "description": "Build a dashboard in React that visualizes sales data with filters and real-time updates.",
+    "budget": 2.2,
+    "duration": "1 to 3 months",
+    "skills": ["React", "Socket.io", "Chart.js", "Node.js"],
+    "levels": "Experienced",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "SEO Optimization for Blog Website",
+    "description": "Looking for an SEO expert to audit and optimize our existing blog website for Google rankings.",
+    "budget": 0.6,
+    "duration": "Less than 1 month",
+    "skills": ["SEO", "Google Analytics", "On-page SEO"],
+    "levels": "Intermediate",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Machine Learning Model for Image Classification",
+    "description": "Build and train a CNN model that can classify images of dogs and cats with high accuracy.",
+    "budget": 2.5,
+    "duration": "3 to 6 months",
+    "skills": ["Python", "TensorFlow", "Keras"],
+    "levels": "Expert",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Telegram Bot for Crypto Alerts",
+    "description": "Develop a Telegram bot that sends alerts based on live crypto price movements.",
+    "budget": 1.0,
+    "duration": "Less than 1 month",
+    "skills": ["Python", "Telegram Bot API", "Crypto APIs"],
+    "levels": "Intermediate",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  },
+  {
+    "title": "Build Freelancing Platform MVP",
+    "description": "Looking to build a basic MVP for a freelancing platform with job posting, proposals, and payments.",
+    "budget": 4.0,
+    "duration": "3 to 6 months",
+    "skills": ["Node.js", "React", "MongoDB", "Stripe"],
+    "levels": "Expert",
+    "status": "open",
+    "clientId": "68329f33fd543255293acf97"
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@thirdweb-dev/storage": "^2.0.15",
+    "cid-tool": "^3.0.0"
+  }
+}

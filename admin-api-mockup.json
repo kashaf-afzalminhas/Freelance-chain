@@ -1,0 +1,562 @@
+{
+  "info": {
+    "name": "Freelance Chain Admin API",
+    "description": "API endpoints for admin functionality",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/dashboard/stats",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "dashboard", "stats"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/dashboard/stats",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "dashboard", "stats"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "stats": {
+                  "totalUsers": 100,
+                  "totalJobs": 50,
+                  "totalContracts": 30,
+                  "activeJobs": 20,
+                  "completedContracts": 10
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "users"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "users"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "users": [
+                  {
+                    "_id": "user123",
+                    "walletAddress": "0x123...",
+                    "role": "client",
+                    "name": "John Doe",
+                    "bio": "Software Developer",
+                    "portfolioLinks": {
+                      "linkedin": "https://linkedin.com/in/johndoe",
+                      "github": "https://github.com/johndoe"
+                    },
+                    "profileImage": "https://example.com/profile.jpg",
+                    "ratings": 4.5,
+                    "averageRating": 4.5
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\",\n    \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/users/user123/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "users", "user123", "status"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\",\n    \"status\": \"active\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/users/user123/status",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "users", "user123", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "user": {
+                  "_id": "user123",
+                  "walletAddress": "0x123...",
+                  "role": "client",
+                  "name": "John Doe",
+                  "status": "active"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Job Management",
+      "item": [
+        {
+          "name": "Get Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/jobs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "jobs"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/jobs",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "jobs"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "jobs": [
+                  {
+                    "_id": "job123",
+                    "title": "Web Development Project",
+                    "description": "Building a modern web application",
+                    "clientId": {
+                      "_id": "client123",
+                      "name": "John Doe",
+                      "walletAddress": "0x123..."
+                    },
+                    "status": "active",
+                    "budget": 5000,
+                    "deadline": "2024-12-31"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Job Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\",\n    \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/jobs/job123/status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "jobs", "job123", "status"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\",\n    \"status\": \"completed\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/jobs/job123/status",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "jobs", "job123", "status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "job": {
+                  "_id": "job123",
+                  "title": "Web Development Project",
+                  "status": "completed",
+                  "clientId": {
+                    "_id": "client123",
+                    "name": "John Doe",
+                    "walletAddress": "0x123..."
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Contract Management",
+      "item": [
+        {
+          "name": "Get Contracts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/contracts",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "contracts"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/contracts",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "contracts"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "contracts": [
+                  {
+                    "_id": "contract123",
+                    "clientId": {
+                      "_id": "client123",
+                      "name": "John Doe",
+                      "walletAddress": "0x123..."
+                    },
+                    "freelancerId": {
+                      "_id": "freelancer123",
+                      "name": "Jane Smith",
+                      "walletAddress": "0x456..."
+                    },
+                    "status": "active",
+                    "amount": 5000,
+                    "startDate": "2024-01-01",
+                    "endDate": "2024-12-31"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Data Export",
+      "item": [
+        {
+          "name": "Export Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/export/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "export", "users"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/export/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "export", "users"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "data": [
+                  {
+                    "_id": "user123",
+                    "walletAddress": "0x123...",
+                    "role": "client",
+                    "name": "John Doe",
+                    "bio": "Software Developer",
+                    "portfolioLinks": {
+                      "linkedin": "https://linkedin.com/in/johndoe",
+                      "github": "https://github.com/johndoe"
+                    },
+                    "profileImage": "https://example.com/profile.jpg",
+                    "ratings": 4.5,
+                    "averageRating": 4.5
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "System Notifications",
+      "item": [
+        {
+          "name": "Send System Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\",\n    \"message\": \"System maintenance scheduled\",\n    \"type\": \"system\",\n    \"targetUsers\": [\"user123\", \"user456\"]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/notifications",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "admin", "notifications"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"walletAddress\": \"0x1a16d8976a56F7EFcF2C8f861C055badA335fBdc\",\n    \"message\": \"System maintenance scheduled\",\n    \"type\": \"system\",\n    \"targetUsers\": [\"user123\", \"user456\"]\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:5000/api/admin/notifications",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "5000",
+                  "path": ["api", "admin", "notifications"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "success": true,
+                "message": "Notification sent successfully"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+} 
